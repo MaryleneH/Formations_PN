@@ -9,6 +9,7 @@ import { MODES } from '../scenarios/index.js';
 import { GLOSSARY } from '../scenarios/glossary.js';
 import { h, btn, icon, md, mdEl, append } from './dom.js';
 import { frDate } from '../engine/util.js';
+import { robot, moodFor } from './robot.js';
 
 const TOOL_LABEL = { gitlab: 'Dans GitLab', ide: null, any: 'GitLab ou ton IDE' };
 const pick = P.pick;
@@ -24,8 +25,10 @@ export function renderCoach(app) {
 
   const parts = [
     h('div', { class: 'coach-head' },
-      h('p', { class: 'coach-kicker' }, kicker),
-      h('h2', { class: 'coach-title', tabindex: '-1' }, m.title)),
+      robot(moodFor(app, { complete: ev.complete, warned: !!(current && current.kind !== 'quiz' && P.warningFor(app.store, m, ide, current)) })),
+      h('div', { class: 'coach-head-text' },
+        h('p', { class: 'coach-kicker' }, kicker),
+        h('h2', { class: 'coach-title', tabindex: '-1' }, m.title))),
     h('section', { class: 'coach-objective', 'aria-label': 'Objectif' },
       h('h3', { class: 'coach-label' }, icon('target'), 'Objectif'),
       mdEl('p', pick(m.objective, ide)),
