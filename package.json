@@ -1,0 +1,11 @@
+{
+  "name": "git-bac-a-sable",
+  "private": true,
+  "type": "module",
+  "description": "Git — Le bac à sable : tests du moteur et des parcours",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "e2e": "node tests/e2e/run.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
