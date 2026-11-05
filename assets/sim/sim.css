@@ -974,18 +974,65 @@ body:has(#sim-app) .nav-footer, body:has(#sim-app) footer.footer { display: none
 .coach-step.is-next .coach-warn { margin-top: 6px; }
 .rs-review-commit textarea { background: #fff; }
 
-/* Le robot du coach */
-.coach-head { display: flex; align-items: center; gap: 12px; }
+/* Le robot du coach : tête, corps, bras et roue animés selon l'humeur */
+.coach-head { display: flex; align-items: center; gap: 20px; }
 .coach-head-text { min-width: 0; }
-.coach-robot { flex: none; width: 48px; height: 48px; display: inline-block; filter: drop-shadow(0 2px 3px rgba(34, 38, 42, .15)); }
+.coach-robot { flex: none; width: 52px; height: 68px; display: inline-block; filter: drop-shadow(0 2px 3px rgba(34, 38, 42, .12)); }
 .coach-robot svg { display: block; overflow: visible; }
+.coach-robot .rb-all, .coach-robot .rb-head, .coach-robot .rb-arm, .coach-robot .rb-wheel, .coach-robot .rb-eye, .coach-robot .rb-heart, .coach-robot .rb-bubbles, .coach-robot .rb-stars { transform-box: view-box; }
+.coach-robot .rb-all { transform-origin: 32px 79px; }
+.coach-robot .rb-head { transform-origin: 32px 40px; }
+.coach-robot .rb-arm-l { transform-origin: 12px 46px; }
+.coach-robot .rb-arm-r { transform-origin: 52px 46px; }
+.coach-robot .rb-wheel { transform-origin: 32px 73px; }
+.coach-robot .rb-heart { transform-origin: 27.5px 53px; }
 .coach-robot .rb-eye { transform-box: fill-box; transform-origin: center; animation: rb-blink 5s infinite; }
 .coach-robot .rb-bulb { animation: rb-glow 2.4s ease-in-out infinite; }
-.coach-robot.is-happy svg, .coach-robot.is-proud svg { animation: rb-hop .6s var(--ease) 2; }
-.coach-robot.is-think .rb-antenna, .coach-robot.is-think .rb-bulb { transform-origin: 24px 11px; animation: rb-tilt 1.6s ease-in-out infinite; }
+.coach-robot .rb-arm { transition: transform .45s var(--ease); }
+.coach-robot .rb-head { transition: transform .45s var(--ease); }
+
+/* Au repos : il respire, les bras se balancent doucement */
+.coach-robot.is-idle .rb-all { animation: rb-breathe 3.2s ease-in-out infinite; }
+.coach-robot.is-idle .rb-arm-l { animation: rb-sway-l 3.2s ease-in-out infinite; }
+.coach-robot.is-idle .rb-arm-r { animation: rb-sway-r 3.2s ease-in-out infinite; }
+.coach-robot.is-idle .rb-heart { animation: rb-beat 1.6s ease-in-out infinite; }
+
+/* Content : il saute, la roue tourne, le bras droit salue */
+.coach-robot.is-happy .rb-all { animation: rb-hop .55s var(--ease) 3; }
+.coach-robot.is-happy .rb-wheel { animation: rb-roll .55s linear 3; }
+.coach-robot.is-happy .rb-arm-r { transform: rotate(-150deg); animation: rb-wave .4s ease-in-out .3s 5 alternate; }
+.coach-robot.is-happy .rb-arm-l { transform: rotate(20deg); }
+
+/* Pensif : main au menton, tête inclinée, bulles qui montent */
+.coach-robot.is-think .rb-arm-r { transform: rotate(128deg); }
+.coach-robot.is-think .rb-head { transform: rotate(8deg); }
+.coach-robot.is-think .rb-bubbles { animation: rb-float 1.8s ease-in-out infinite; }
+
+/* Perplexe : haussement d'épaules */
+.coach-robot.is-oops .rb-arm-l { animation: rb-shrug-l 1.4s ease-in-out infinite; }
+.coach-robot.is-oops .rb-arm-r { animation: rb-shrug-r 1.4s ease-in-out infinite; }
+.coach-robot.is-oops .rb-head { animation: rb-puzzled 2.8s ease-in-out infinite; }
+
+/* Fier : bras levés, cœur qui bat, étoiles */
+.coach-robot.is-proud .rb-arm-l { transform: rotate(155deg); }
+.coach-robot.is-proud .rb-arm-r { transform: rotate(-155deg); }
+.coach-robot.is-proud .rb-all { animation: rb-hop .6s var(--ease) 2; }
+.coach-robot.is-proud .rb-heart { animation: rb-beat .8s ease-in-out infinite; }
+.coach-robot.is-proud .rb-stars { animation: rb-glow 1.2s ease-in-out infinite; }
+
 @keyframes rb-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.15); } }
-@keyframes rb-glow { 50% { opacity: .55; } }
-@keyframes rb-hop { 40% { transform: translateY(-5px) rotate(-4deg); } }
-@keyframes rb-tilt { 50% { transform: rotate(12deg); } }
-.sim[data-focus="on"] .coach-robot { width: 36px; height: 36px; }
-.sim[data-focus="on"] .coach-robot svg { width: 36px; height: 36px; }
+@keyframes rb-glow { 50% { opacity: .5; } }
+@keyframes rb-breathe { 50% { transform: translateY(-1.2px); } }
+@keyframes rb-sway-l { 50% { transform: rotate(6deg); } }
+@keyframes rb-sway-r { 50% { transform: rotate(-6deg); } }
+@keyframes rb-beat { 50% { transform: scale(1.25); } }
+@keyframes rb-hop { 40% { transform: translateY(-6px) rotate(-3deg); } 70% { transform: translateY(0) rotate(2deg); } }
+@keyframes rb-roll { to { transform: rotate(360deg); } }
+@keyframes rb-wave { from { transform: rotate(-150deg); } to { transform: rotate(-115deg); } }
+@keyframes rb-float { 0%, 100% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(-3px); opacity: .6; } }
+@keyframes rb-shrug-l { 0%, 100% { transform: rotate(0); } 40%, 60% { transform: rotate(38deg) translateY(-2px); } }
+@keyframes rb-shrug-r { 0%, 100% { transform: rotate(0); } 40%, 60% { transform: rotate(-38deg) translateY(-2px); } }
+@keyframes rb-puzzled { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-7deg); } }
+.sim[data-focus="on"] .coach-robot { width: 40px; height: 52px; }
+.sim[data-focus="on"] .coach-robot svg { width: 40px; height: 52px; }
+@media (prefers-reduced-motion: reduce) { .coach-robot .rb-arm, .coach-robot .rb-head { transition: none; } }
