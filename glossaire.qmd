@@ -1,0 +1,61 @@
+---
+title: "Glossaire"
+subtitle: "Les notions du parcours, dans l’ordre où elles deviennent utiles"
+toc: false
+---
+
+::: {.gbs-glossary}
+[Git]{#git}
+:   L’outil qui gère les versions du projet : il enregistre des commits et compare des versions. Il travaille dans ton environnement (poste ou espace distant).
+
+[GitLab]{#gitlab}
+:   Le service qui héberge notamment le **dépôt distant**. Il gère aussi les comptes, les droits sur les projets et les jetons d’accès.
+
+[VS Code ou RStudio]{#ide}
+:   L’interface dans laquelle tu travailles. Elle affiche les fichiers et pilote Git ; elle n’héberge pas le dépôt.
+
+[URL du dépôt]{#url}
+:   L’adresse du projet à cloner, par exemple `https://gitlab.example.com/stagiaire/etude-entreprises.git`. Elle n’est pas secrète. Une adresse en `git@…` désigne le protocole SSH.
+
+[Jeton personnel d’accès]{#jeton}
+:   Un secret rattaché à ton compte GitLab. Pour Git sur HTTPS, il remplace le mot de passe. Sa valeur n’est affichée qu’une seule fois, à sa création.
+
+[Jeton de projet]{#jeton-projet}
+:   Un jeton rattaché à un projet (et à un compte de service), plutôt destiné aux automatisations. Ce parcours utilise un jeton personnel.
+
+[Permissions du jeton (scopes)]{#scopes}
+:   Ce que le jeton autorise. `read_repository` : lire (cloner, récupérer). `write_repository` : lire et écrire (pousser). `api` donne un accès complet à l’API : inutile pour un usage Git seul. Les permissions d’un jeton ne dépassent jamais les droits du compte.
+
+[Authentification]{#authentification}
+:   Être reconnu : GitLab vérifie que le jeton existe, qu’il est actif, et à qui il appartient. Échec typique : `HTTP Basic: Access denied`.
+
+[Autorisation]{#autorisation}
+:   Avoir le droit d’effectuer l’opération : permissions du jeton **et** droits du compte sur le projet (rôle, branches protégées). Échec typique : erreur 403, `You are not allowed…`.
+
+[Identité de commit]{#identite}
+:   `user.name` et `user.email`, inscrits dans chaque commit. C’est une signature dans l’historique, pas une authentification.
+
+[Dépôt local]{#depot-local}
+:   La copie complète du dépôt dans l’environnement où Git travaille : ton poste, ou un espace distant comme Coder ou Onyxia.
+
+[Remote (origin)]{#remote}
+:   Le lien enregistré entre le dépôt local et le dépôt distant. Le clonage le crée sous le nom `origin` ; `git remote -v` l’affiche.
+
+[Commit]{#commit}
+:   Une version enregistrée dans l’historique, avec un message, un auteur et une date. Il reste local tant qu’il n’est pas envoyé.
+
+[Branche]{#branche}
+:   Une ligne d’historique. Ce parcours n’utilise que `main` ; les autres branches et les merge requests feront l’objet de la suite.
+
+[Préparation (staging)]{#staging}
+:   Le choix des changements qui entreront dans le prochain commit (`git add`).
+
+[Diff]{#diff}
+:   La comparaison ligne à ligne de deux versions d’un fichier : `+` ligne ajoutée, `-` ligne supprimée.
+
+[Push]{#push}
+:   L’envoi vers GitLab des commits qu’il n’a pas encore. Les modifications non commitées ne partent pas.
+
+[Gestionnaire d’identifiants]{#gestionnaire}
+:   L’outil qui mémorise les identifiants pour Git : Gestionnaire d’identification Windows (Git Credential Manager), Trousseau macOS, *credential helper* sous Linux, Coder ou Onyxia.
+:::

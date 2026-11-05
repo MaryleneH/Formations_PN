@@ -1,0 +1,153 @@
+---
+title: "Je le fais dans mes outils"
+subtitle: "Fiche de transfert : du bac à sable à ton véritable environnement"
+toc: true
+---
+
+```{=html}
+<p class="gbs-noprint"><button class="gbs-btn gbs-btn-ghost" type="button" onclick="window.print()">Imprimer cette fiche</button></p>
+```
+
+::: {.callout-important}
+## Tes vrais identifiants
+Ton nom d’utilisateur et tes jetons réels se saisissent **dans GitLab, dans VS Code ou RStudio, ou dans le gestionnaire d’identifiants de ton système**. Jamais dans ce site d’exercice, qui les refuse.
+:::
+
+## Avant de commencer
+
+::: {.gbs-check}
+- J’ai un compte sur l’instance GitLab de mon équipe et je sais l’ouvrir dans mon navigateur.
+- Je sais **où Git travaille** : sur mon poste, ou dans un espace distant (Coder, Onyxia…). C’est là que sera mon dépôt local.
+- Git y est installé : `git --version` affiche une version dans le terminal.
+- Mon identité est configurée **dans cet environnement** : `git config --global user.name` et `git config --global user.email` affichent mon nom et mon adresse.
+- J’ai un gestionnaire de mots de passe pour ranger un jeton.
+:::
+
+## 1. Créer le projet (si nécessaire)
+
+Dans GitLab : **Create new (+)** › **New project/repository** › **Create blank project**. Renseigne le nom, vérifie l’espace de noms et le chemin (**Project slug**), choisis **Private**, garde **Initialize repository with a README**, puis **Create project**.
+
+## 2. Retrouver l’URL du dépôt
+
+Page du projet › bouton **Code** › copie l’adresse **Clone with HTTPS**. Elle a la forme :
+
+```text
+https://<adresse-de-ton-gitlab>/<espace>/<projet>.git
+```
+
+Une adresse qui commence par `git@` est une adresse **SSH** : elle s’utilise avec une clé SSH, pas avec un jeton.
+
+## 3. Préparer l’accès adapté à mon objectif
+
+| Mon objectif | Scope du jeton personnel |
+|---|---|
+| Cloner et récupérer seulement | `read_repository` |
+| Cloner, puis envoyer des modifications | `write_repository` (inclut la lecture) |
+| Usage Git seul | **pas** `api` : il donne bien plus de droits que nécessaire |
+
+Chemin : **avatar** › **Edit profile** › **Access** › **Personal access tokens** › **Generate token** › **Legacy token**.
+
+- Un **nom** explicite (l’environnement ou l’usage : `onyxia-etudes`, `poste-bureau`).
+- Une **date d’expiration** proche de ton besoin. Sans date, GitLab fixe 365 jours.
+- **Copie la valeur immédiatement** et range-la dans ton gestionnaire de mots de passe : GitLab ne l’affichera plus après avoir quitté la page.
+- Les permissions d’un jeton ne dépassent jamais les droits de ton compte sur le projet.
+
+::: {.callout-note collapse="true"}
+## Jeton personnel, jeton de projet, jeton à permissions fines
+- Le **jeton personnel** est rattaché à ton compte : c’est celui de ce parcours.
+- Le **jeton de projet** (*Project access token*) est rattaché à un projet et à un compte de service ; il sert surtout aux automatisations.
+- Depuis GitLab 19.2, **Generate token** propose aussi un **Fine-grained token** (permissions par ressource). Son formulaire est différent ; ce parcours utilise le **Legacy token**, à scopes.
+:::
+
+## 4. Où utiliser le jeton
+
+Au premier clonage, Git te demande des identifiants :
+
+| Question | Réponse |
+|---|---|
+| `Username for 'https://…':` | ton nom d’utilisateur GitLab (GitLab ne le vérifie pas avec un jeton, mais il ne doit pas être vide) |
+| `Password for 'https://…@…':` | **le jeton**, pas le mot de passe de ton compte |
+
+La forme de cette demande **varie** :
+
+- **VS Code** : une zone de saisie en haut de la fenêtre, ou la fenêtre du gestionnaire d’identifiants du système ;
+- **RStudio** : une petite fenêtre de saisie ;
+- **Terminal** : les deux questions s’affichent sur la ligne ; la saisie du jeton reste invisible ;
+- **Windows** : *Git Credential Manager* ouvre sa propre fenêtre, et peut proposer une connexion par le navigateur.
+
+Ensuite, le **gestionnaire d’identifiants** peut mémoriser le jeton (Trousseau sous macOS, Gestionnaire d’identification sous Windows, *credential helper* sous Linux, Coder ou Onyxia). Pour savoir lequel est configuré :
+
+```bash
+git config --get credential.helper
+```
+
+::: {.callout-warning}
+## Jamais le jeton dans l’URL
+Une adresse comme `https://utilisateur:jeton@…` fonctionne techniquement, mais elle enregistre le jeton **en clair** dans `.git/config`, d’où il peut réapparaître (captures d’écran, sauvegardes, journaux). Utilise l’URL HTTPS seule : Git demandera le jeton.
+:::
+
+## 5. Cloner
+
+::: {.panel-tabset}
+## VS Code
+**Source Control** › **Clone Repository** (ou la commande **Git: Clone** de la palette) › colle l’URL › choisis le dossier parent › **Open**. Aucune extension GitLab n’est nécessaire pour cloner par l’URL.
+
+## RStudio
+**File** › **New Project…** › **Version Control** › **Git** › **Repository URL**, **Project directory name**, **Create project as subdirectory of** › **Create Project**. RStudio ajoute un fichier `.Rproj` et complète `.gitignore`.
+
+## Terminal
+```bash
+cd ~/projets
+git clone https://<adresse-de-ton-gitlab>/<espace>/<projet>.git
+```
+:::
+
+**Je reconnais un clonage réussi :**
+
+```bash
+cd <projet>
+git remote -v      # origin  https://…/<projet>.git (fetch) / (push)
+git status         # On branch main — Your branch is up to date with 'origin/main'.
+```
+
+## 6. Modifier, préparer, commiter
+
+1. Je modifie un fichier et **je l’enregistre**.
+2. Je relis le **diff** (VS Code : clic sur le fichier dans *Changes* ; RStudio : **Diff** ; terminal : `git diff`).
+3. Je **prépare** le changement (VS Code : **+** ; RStudio : case **Staged** ; terminal : `git add <fichier>`).
+4. Je crée le **commit** avec un message qui dit ce que le changement apporte.
+
+À ce stade, GitLab n’a encore rien reçu.
+
+## 7. Envoyer et vérifier
+
+- VS Code : **Sync Changes** (récupère puis envoie) ou **…** › **Push** ;
+- RStudio : **Push** dans l’onglet Git ;
+- terminal : `git push`.
+
+**Je vérifie dans GitLab** : **Code** › **Commits** montre mon commit en tête, et le fichier affiche ma modification. Dans mon environnement, `git status` indique *up to date*.
+
+## 8. Quand cela échoue : quoi contrôler
+
+Un même message peut avoir plusieurs causes : vérifie les hypothèses dans l’ordre, sans conclure sur le seul message.
+
+| Message | Hypothèses à vérifier |
+|---|---|
+| `HTTP Basic: Access denied` | valeur du jeton incorrecte ; jeton **expiré** ou **révoqué** ; scope insuffisant ; ancien jeton encore mémorisé. → Liste des jetons (état, expiration, scopes), puis identifiants mémorisés. |
+| `You are not allowed to upload code.` (403) | le jeton n’a que `read_repository`. → Nouveau jeton `write_repository`, puis faire oublier l’ancien au gestionnaire d’identifiants. |
+| `You are not allowed to push code to this project.` | ton **rôle** sur le projet ne permet pas d’écrire. → **Manage** › **Members**. |
+| `… push code to protected branches …` | la branche est **protégée**. → Branche + merge request, ou échange avec un Maintainer. |
+| `Permission denied (publickey)` | URL **SSH** sans clé configurée. → Reprendre l’URL HTTPS. |
+| `repository '…' not found` | URL erronée, ou pas d’accès au projet. → Recopier l’URL depuis **Code** ; vérifier ton accès. |
+| `Author identity unknown` | `user.name` / `user.email` absents de cet environnement. → `git config --global …` |
+| GitLab ne montre pas ma modification | commit non envoyé, ou modification non commitée. → `git status`. |
+
+## Ce qui peut varier chez toi
+
+- **L’interface de GitLab** : les libellés et emplacements évoluent d’une version à l’autre ; le bac à sable suit GitLab 19.5.
+- **L’environnement** : poste personnel, Coder, Onyxia… Le dépôt local est toujours là où Git travaille.
+- **La demande d’authentification** : fenêtre de l’IDE, du système ou questions dans le terminal.
+- **Le gestionnaire d’identifiants** : présent ou non, et différent selon le système. Sans gestionnaire, Git redemande le jeton à chaque opération.
+- **Les règles de ton instance** : durée maximale des jetons, branches protégées, méthodes d’authentification imposées.
+
+Besoin d’un mot ? Le [glossaire](glossaire.qmd) reprend chaque notion.

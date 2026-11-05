@@ -1,0 +1,63 @@
+---
+title: "Pour la formatrice"
+subtitle: "Accompagnement individuel : objectifs observables, débrief, points de vigilance"
+---
+
+## Le principe
+
+Le collègue s’exerce **à son rythme**, puis refait les gestes dans ses vrais outils. Le simulateur valide une étape **uniquement d’après ce qu’il a réellement fait** (projet créé, jeton actif, dépôt cloné, commit présent, push reçu). Les aides ne valident rien ; elles sont simplement notées dans le débrief de chaque mission.
+
+## Proposition de déroulé
+
+| Séance | Contenu | Modalité |
+|---|---|---|
+| 1 (≈ 1 h) | Missions 1 à 3 : projet, accès, clonage | Parcours guidé, dans l’IDE qu’il utilise |
+| 2 (≈ 1 h) | Missions 4 et 5, puis exercices 6.1, 6.5 et 6.7 | Guidé, puis atelier de dépannage |
+| 3 (≈ 1 h) | Missions 1 à 5 en **autonome**, exercices restants, mission 7 | Entraînement autonome |
+| 4 | Les mêmes gestes **dans ses vrais outils**, avec la [fiche de transfert](dans-mes-outils.qmd) | Accompagnement réel |
+
+Entre deux séances, il peut rejouer seul : la progression reste dans son navigateur.
+
+## Objectifs observables
+
+| Mission | Ce que l’on doit pouvoir observer |
+|---|---|
+| 1 | Un projet **privé** `etude-entreprises` avec README ; il sait dire que le dépôt n’existe que sur GitLab. |
+| 2 | L’URL HTTPS copiée ; un jeton **limité à `write_repository`**, avec expiration ; la valeur rangée avant de quitter la page. |
+| 3 | Un clonage authentifié par le jeton (pas de jeton dans l’URL) ; le projet ouvert ; `git remote -v` lu et compris. |
+| 4 | Un fichier modifié, son diff relu, un commit au message descriptif ; il constate que GitLab n’a pas changé. |
+| 5 | Le push, puis la vérification **dans GitLab** du commit et du contenu. |
+| 6 | Pour chaque panne : le message lu, **une hypothèse vérifiée** (liste des jetons, rôle, URL…), la bonne action. |
+| 7 | Le parcours complet, seul, sur un autre projet ; une explication de la démarche avec ses mots. |
+
+## Questions de débrief
+
+- À quel moment ta modification est-elle arrivée sur GitLab ?
+- Que contenait ton dépôt local avant le push ?
+- Qu’aurais-tu observé si tu t’étais arrêté après le commit ?
+- Quelle différence fais-tu entre l’URL et le jeton ? Entre le jeton et `user.name` ?
+- Face à `HTTP Basic: Access denied`, que vérifies-tu, et dans quel ordre ?
+- Pourquoi ne pas choisir `api` « pour être tranquille » ?
+- Où se trouve ton dépôt local quand tu travailles dans Onyxia ?
+
+## Points de vigilance
+
+- **Jeton perdu** : beaucoup de débutants ferment la page avant de copier. C’est l’exercice 6.4 ; l’aborder sans dramatiser : on révoque, on recrée.
+- **Mot de passe du compte** : il n’est pas accepté par Git sur les instances avec authentification à deux facteurs ou SSO. Le jeton est la méthode à retenir.
+- **Console R et Terminal** dans RStudio : une commande `git` tapée dans la Console produit une erreur R. Le simulateur le signale et renvoie vers le Terminal.
+- **« Enregistrer »** : enregistrer le fichier, commiter et pousser sont trois gestes distincts. Faire nommer chacun.
+- **Identifiants mémorisés** : après un changement de jeton, l’ancien peut rester dans le gestionnaire d’identifiants. Montrer où il se trouve sur son système réel.
+- **Variations réelles** : la fenêtre d’authentification de son poste peut différer du simulateur. Prévoir ce moment pendant la séance 4.
+- **Identité Git** : à configurer dans **chaque** environnement (nouveau service Onyxia, nouveau poste).
+
+## Lire la progression
+
+Le menu **Missions** du bac à sable indique, pour chaque mission : à faire, en cours, maîtrisé. Le débrief de chaque mission affiche les étapes où une aide a été consultée (« avec indice », « avec repère », « geste montré ») : c’est un repère pour choisir quoi rejouer, pas une note.
+
+Le bouton **Recommencer la mission** remet la mission en situation de départ sans effacer les autres. **Effacer toute la progression** se trouve au bas du menu Missions.
+
+## Limites connues du simulateur
+
+- Pas de branches, de merge requests ni de conflits : ce sera la suite, l’architecture est prête.
+- Le terminal reconnaît un sous-ensemble de commandes (liste : `help`). Pour le reste, il l’indique clairement.
+- Les écrans GitLab, VS Code et RStudio sont des répliques simplifiées : les éléments hors parcours sont visibles mais marqués « non simulé ».

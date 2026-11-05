@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="Git — Le bac à sable">
+  <rect x="1" y="1" width="38" height="38" rx="10" fill="#2f6b4f"/>
+  <path d="M12 27V13m0 14c0-6 16-4 16-12" fill="none" stroke="#e5eee8" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="12" cy="12" r="3.6" fill="#f6f5f0"/>
+  <circle cx="12" cy="28" r="3.6" fill="#f6f5f0"/>
+  <circle cx="28" cy="14" r="3.6" fill="#f2c46d"/>
+</svg>

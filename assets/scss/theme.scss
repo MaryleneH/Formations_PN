@@ -1,0 +1,131 @@
+/*-- scss:defaults --*/
+// Système graphique « Git — Le bac à sable » : un atelier calme et précis.
+
+$white: #ffffff;
+$body-bg: #f6f5f0;
+$body-color: #22262a;
+$primary: #2f6b4f;
+$secondary: #4a5057;
+$success: #2f6b4f;
+$info: #2c5d8a;
+$warning: #8a5a00;
+$danger: #a1312b;
+$light: #f1f0ea;
+$dark: #22262a;
+$link-color: #24553f;
+$border-color: #e2e0d8;
+
+$font-family-sans-serif: "Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+$font-family-monospace: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+$headings-font-family: "Fraunces", Georgia, serif;
+$headings-font-weight: 600;
+$font-size-root: 16px;
+$line-height-base: 1.6;
+
+$navbar-bg: #fbfaf6;
+$navbar-fg: #22262a;
+$navbar-hl: #24553f;
+$footer-bg: #f6f5f0;
+$code-color: #24553f;
+$code-bg: #ecefe9;
+$border-radius: 0.6rem;
+
+/*-- scss:rules --*/
+
+:root {
+  --bs-font-sans-serif: #{$font-family-sans-serif};
+  --gbs-paper: #f6f5f0;
+  --gbs-surface: #ffffff;
+  --gbs-surface-2: #f1f0ea;
+  --gbs-ink: #22262a;
+  --gbs-ink-2: #4a5057;
+  --gbs-ink-3: #62686e;
+  --gbs-line: #e2e0d8;
+  --gbs-accent: #2f6b4f;
+  --gbs-accent-strong: #24553f;
+  --gbs-accent-soft: #e5eee8;
+  --gbs-radius: 10px;
+}
+
+body { -webkit-font-smoothing: antialiased; }
+
+.navbar {
+  border-bottom: 1px solid var(--gbs-line);
+  box-shadow: none;
+  .navbar-brand { font-family: "Fraunces", Georgia, serif; font-weight: 600; letter-spacing: -0.01em; }
+  .nav-link { font-weight: 500; }
+  .nav-link.active { color: var(--gbs-accent-strong) !important; text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 2px; }
+}
+
+h1, h2, h3 { letter-spacing: -0.015em; color: var(--gbs-ink); }
+h1.title { font-size: clamp(2rem, 1.4rem + 2vw, 2.8rem); }
+.subtitle { color: var(--gbs-ink-2); font-family: "Public Sans", sans-serif; }
+
+a { text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--gbs-accent); outline-offset: 2px; border-radius: 3px; }
+
+code { padding: 0.08em 0.35em; border-radius: 5px; font-size: 0.9em; }
+pre code { padding: 0; }
+div.sourceCode { border-radius: var(--gbs-radius); border: 1px solid var(--gbs-line); background: var(--gbs-surface); }
+
+// Repère permanent de simulation (pages éditoriales)
+.gbs-fiction { display: inline-flex; gap: .4rem; align-items: center; font-size: .82rem; color: var(--gbs-ink-2); background: var(--gbs-surface-2); border: 1px solid var(--gbs-line); padding: .2rem .65rem; border-radius: 999px; }
+
+// ---- Accueil ----
+.gbs-hero { padding: 2.5rem 0 1.5rem; }
+.gbs-hero .gbs-kicker { font-size: .85rem; text-transform: uppercase; letter-spacing: .12em; color: var(--gbs-accent-strong); font-weight: 700; margin: 0 0 .5rem; }
+.gbs-hero h1 { font-size: clamp(2.2rem, 1.6rem + 2.4vw, 3.4rem); line-height: 1.08; margin: 0 0 .75rem; }
+.gbs-hero .gbs-lead { font-size: 1.2rem; color: var(--gbs-ink-2); max-width: 40rem; }
+.gbs-hand { font-family: "Fraunces", Georgia, serif; font-style: italic; color: var(--gbs-accent-strong); }
+
+.gbs-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem; padding: 0; list-style: none; }
+.gbs-card { background: var(--gbs-surface); border: 1px solid var(--gbs-line); border-radius: 14px; padding: 1.25rem 1.25rem 1.1rem; display: flex; flex-direction: column; gap: .5rem; box-shadow: 0 1px 2px rgba(34,38,42,.04), 0 6px 22px rgba(34,38,42,.05); transition: border-color .2s, transform .2s; }
+.gbs-card:hover { border-color: #b9c9bf; }
+.gbs-card h3 { font-size: 1.2rem; margin: 0; }
+.gbs-card p { margin: 0; color: var(--gbs-ink-2); }
+.gbs-card .gbs-card-go { margin-top: auto; font-weight: 600; }
+.gbs-card .gbs-num { font-family: "Fraunces", Georgia, serif; color: var(--gbs-accent); font-size: 1.6rem; line-height: 1; }
+
+.gbs-btn { display: inline-flex; align-items: center; gap: .5rem; padding: .7rem 1.15rem; border-radius: 10px; font-weight: 600; text-decoration: none; border: 1px solid transparent; min-height: 44px; }
+.gbs-btn-primary { background: var(--gbs-accent); color: #fff !important; }
+.gbs-btn-primary:hover { background: var(--gbs-accent-strong); }
+.gbs-btn-ghost { border-color: var(--gbs-line); color: var(--gbs-ink) !important; background: var(--gbs-surface); }
+
+.gbs-resume { display: none; margin: 1rem 0; padding: .9rem 1.1rem; background: var(--gbs-accent-soft); border: 1px solid #c9dccf; border-radius: 12px; }
+.gbs-resume.is-on { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; }
+
+.gbs-missions { counter-reset: m; list-style: none; padding: 0; display: grid; gap: .5rem; }
+.gbs-missions li { display: grid; grid-template-columns: 2.2rem 1fr auto; gap: .75rem; align-items: baseline; padding: .7rem .9rem; background: var(--gbs-surface); border: 1px solid var(--gbs-line); border-radius: 10px; }
+.gbs-missions .gbs-m-num { font-family: "Fraunces", Georgia, serif; color: var(--gbs-accent); font-size: 1.15rem; }
+.gbs-missions .gbs-m-status { font-size: .85rem; color: var(--gbs-ink-3); }
+.gbs-missions .gbs-m-status.is-done { color: var(--gbs-accent-strong); font-weight: 600; }
+
+// Callouts sobres
+.callout { border-radius: 10px !important; }
+
+// Glossaire
+.gbs-glossary dt { font-family: "Fraunces", Georgia, serif; font-size: 1.15rem; margin-top: 1.1rem; scroll-margin-top: 5rem; }
+.gbs-glossary dd { margin: .25rem 0 0; color: var(--gbs-ink-2); }
+.gbs-glossary dt:target { background: var(--gbs-accent-soft); border-radius: 6px; padding: 0 .3rem; }
+
+// Fiche de transfert : impression
+.gbs-check { list-style: none; padding-left: 0; }
+.gbs-check li { padding-left: 1.6rem; position: relative; margin: .35rem 0; }
+.gbs-check li::before { content: ""; position: absolute; left: 0; top: .35em; width: 1rem; height: 1rem; border: 1.5px solid var(--gbs-ink-2); border-radius: 3px; }
+
+@media print {
+  .navbar, #quarto-header, .nav-footer, .gbs-noprint, #quarto-margin-sidebar, .quarto-title-meta { display: none !important; }
+  body { background: #fff; font-size: 11pt; }
+  main { padding: 0 !important; }
+  h2 { break-after: avoid; margin-top: 1rem; }
+  section, .callout, table { break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+// Mode concentration du bac à sable : la barre du site se retire
+body.sim-focus-mode #quarto-header { display: none; }
+body.sim-focus-mode .nav-footer, body.sim-focus-mode footer.footer { display: none; }
