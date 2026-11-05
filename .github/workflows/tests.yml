@@ -1,0 +1,41 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  moteur-et-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tests du moteur, du terminal et des scénarios
+        run: node --test tests/*.test.js
+
+      - name: Installer Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.10.20
+
+      - name: Rendre le site
+        run: quarto render
+
+      - name: Contrôler le site rendu
+        run: sh tests/check-site.sh _site
+
+      - name: Parcours dans un navigateur
+        run: |
+          npm install --no-save playwright@1
+          npx playwright install --with-deps chromium
+          node tests/e2e/run.mjs
