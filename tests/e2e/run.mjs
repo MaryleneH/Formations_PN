@@ -86,14 +86,13 @@ async function mission1(p) {
   await click(p, 'gl.blank-card');
   await fill(p, 'gl.field-name', 'etude-entreprises');
   assert(await p.locator(T('gl.field-slug')).inputValue() === 'etude-entreprises', 'slug automatique');
-  await p.locator(`${T('gl.readme')} input`).uncheck();
   await click(p, 'gl.create-project');
-  await p.locator('.gl-empty-repo').waitFor();
+  await p.locator('.gl-readme').waitFor();
   await answerQuiz(p);
   await expectDone(p, 'm1');
 }
 
-async function mission2(p) {
+async function mission2(p, id = 'm2') {
   await click(p, 'gl.code-button');
   await click(p, 'gl.clone-https-copy');
   await click(p, 'gl.avatar');
@@ -110,7 +109,7 @@ async function mission2(p) {
   await click(p, 'vault.save');
   await p.keyboard.press('Escape');
   await answerQuiz(p);
-  await expectDone(p, 'm2');
+  await expectDone(p, id);
 }
 
 async function authWithVault(p, ide) {
@@ -141,6 +140,7 @@ async function mission3(p, ide) {
     await click(p, 'pick.ok');
     await authWithVault(p, ide);
     await click(p, 'vs.notif-open');
+    await click(p, 'vs.file-README.md');
     await click(p, 'vs.terminal-tab');
     await p.locator(T('vs.terminal-input')).fill('git remote -v');
     await p.locator(T('vs.terminal-input')).press('Enter');
@@ -157,6 +157,7 @@ async function mission3(p, ide) {
     await click(p, 'rs.create');
     await authWithVault(p, ide);
     await p.locator(T('rs.tab-git')).waitFor();
+    await click(p, 'rs.files-README.md');
     // Une commande Git tapée dans la Console R : retour pédagogique.
     await click(p, 'rs.tab-console');
     await p.locator(T('rs.console-input')).fill('git remote -v');
@@ -172,20 +173,11 @@ async function mission3(p, ide) {
 
 async function mission4(p, ide) {
   const editor = ide === 'vscode' ? 'vs.editor' : 'rs.editor';
-  if (ide === 'vscode') {
-    await click(p, 'vs.explorer');
-    await click(p, 'vs.new-file');
-    await p.locator('[data-fk="vs.newfile-input"]').fill('README.md');
-    await p.locator('[data-fk="vs.newfile-input"]').press('Enter');
-  } else {
-    await click(p, 'rs.new-file');
-    await p.locator('[data-fk="vsm-Markdown File"]').click();
-    assert(await p.locator('[data-fk="rs.newfile-input"]').inputValue() === 'README.md', 'nom proposé');
-    await p.locator('[data-fk="rs.newfile-input"]').press('Enter');
-  }
+  if (ide === 'vscode') await click(p, 'vs.file-README.md'); else await click(p, 'rs.files-README.md');
   const ed = p.locator(T(editor));
   await ed.click();
-  await ed.type('# etude-entreprises\n\nÉtude fictive sur la démographie des entreprises d’un territoire.\n');
+  await ed.press('Control+End');
+  await ed.type('\nÉtude fictive sur la démographie des entreprises d’un territoire.\n');
   await ed.press('Control+s');
   if (ide === 'vscode') {
     await click(p, 'vs.scm');
@@ -204,7 +196,7 @@ async function mission4(p, ide) {
     await p.locator('.rs-review [data-fk="rs.review-close"]').click();
   }
   const w = await world(p);
-  assert(w.remote.projects['stagiaire/etude-entreprises'].commits.length === 0, 'le distant ne doit pas changer après un commit');
+  assert(w.remote.projects['stagiaire/etude-entreprises'].commits.length === 1, 'le distant ne doit pas changer après un commit');
   await click(p, 'tb.tool-gitlab');
   await p.locator('.gl-logo').click();
   await click(p, 'gl.project-link');
@@ -214,17 +206,15 @@ async function mission4(p, ide) {
 async function mission5(p, ide) {
   await click(p, 'tb.tool-ide');
   if (ide === 'vscode') {
-    await click(p, 'vs.scm');
-    await click(p, 'vs.publish');
+    await click(p, 'vs.sync');
+    await click(p, 'vs.dialog-ok');
   } else {
-    await click(p, 'rs.tab-git');
-    assert(await p.locator(T('rs.git-push')).first().isDisabled(), 'Push grisé sans branche suivie');
-    await click(p, 'rs.tab-terminal');
-    await p.locator(T('rs.terminal-input')).fill('git push -u origin main');
-    await p.locator(T('rs.terminal-input')).press('Enter');
+    await click(p, 'rs.git-push');
+    await p.locator('.rs-dialog .rs-output').waitFor();
+    await p.locator('[data-fk="rsd-close"]').click();
   }
   const w = await world(p);
-  assert(w.remote.projects['stagiaire/etude-entreprises'].commits.length === 1, 'le push met à jour le distant');
+  assert(w.remote.projects['stagiaire/etude-entreprises'].commits.length === 2, 'le push met à jour le distant');
   await click(p, 'tb.tool-gitlab');
   await click(p, 'gl.nav-commits');
   await click(p, 'gl.project-link');
@@ -248,6 +238,145 @@ async function fullJourney(browser, base, ide) {
   return p;
 }
 
+// ---- parcours B : travail existant dans le pod ----
+const URL_HTTPS = 'https://gitlab.example.com/stagiaire/etude-entreprises.git';
+async function missionB1(p) {
+  await click(p, 'gl.create-new');
+  await click(p, 'gl.menu-new-project');
+  await click(p, 'gl.blank-card');
+  await fill(p, 'gl.field-name', 'etude-entreprises');
+  await p.locator(`${T('gl.readme')} input`).uncheck();
+  await click(p, 'gl.create-project');
+  await p.locator('.gl-empty-repo').waitFor();
+  await answerQuiz(p);
+  await expectDone(p, 'm1b');
+}
+async function copyHttpsUrl(p) {
+  await click(p, 'tb.tool-gitlab');
+  await p.locator('.gl-logo').click();
+  await click(p, 'gl.project-link');
+  await click(p, 'gl.code-button');
+  await click(p, 'gl.clone-https-copy');
+  await p.keyboard.press('Escape');
+}
+async function termRun(p, ide, cmd) {
+  const t = p.locator(T(ide === 'vscode' ? 'vs.terminal-input' : 'rs.terminal-input'));
+  await t.fill(cmd);
+  await t.press('Enter');
+}
+async function missionB3(p, ide) {
+  await click(p, 'tb.tool-ide');
+  if (ide === 'vscode') {
+    await click(p, 'vs.scm');
+    await click(p, 'vs.init');
+  } else {
+    await click(p, 'rs.menu-tools');
+    await click(p, 'rs.vc-setup');
+    await p.locator(T('rs.vc-git')).selectOption('git');
+    await click(p, 'rs.vc-ok');
+    await click(p, 'rs.vc-yes');
+    await p.locator(T('rs.tab-git')).waitFor();
+  }
+  await copyHttpsUrl(p);
+  await click(p, 'tb.tool-ide');
+  if (ide === 'vscode') {
+    await click(p, 'vs.scm');
+    await click(p, 'vs.more');
+    await click(p, 'vs.add-remote');
+    await p.locator(T('vs.quickinput')).fill(URL_HTTPS);
+    await p.locator(T('vs.quickinput')).press('Enter');
+    await p.locator(T('vs.quickinput')).press('Enter'); // nom proposé : origin
+    await click(p, 'vs.terminal-tab');
+  } else {
+    await click(p, 'rs.tab-terminal');
+    await termRun(p, ide, `git remote add origin ${URL_HTTPS}`);
+  }
+  await termRun(p, ide, 'git remote -v');
+  await answerQuiz(p);
+  await expectDone(p, 'm3b');
+}
+async function missionB4(p, ide) {
+  if (ide === 'vscode') {
+    await click(p, 'vs.explorer');
+    await click(p, 'vs.new-file');
+    await p.locator('[data-fk="vs.newfile-input"]').fill('.gitignore');
+    await p.locator('[data-fk="vs.newfile-input"]').press('Enter');
+  } else {
+    await click(p, 'rs.files-.gitignore');
+  }
+  const ed = p.locator(T(ide === 'vscode' ? 'vs.editor' : 'rs.editor'));
+  await ed.click();
+  await ed.press('Control+End');
+  await ed.type('entreprises.csv\n');
+  await ed.press('Control+s');
+  if (ide === 'vscode') {
+    await click(p, 'vs.scm');
+    assert(!(await p.locator('[data-fk="vs.change-entreprises.csv"]').count()), 'les données doivent être ignorées');
+    await click(p, 'vs.stage-all');
+    await fill(p, 'vs.commit-message', 'Ajoute le rapport et le script d’analyse');
+    await click(p, 'vs.commit-button');
+  } else {
+    await click(p, 'rs.tab-git');
+    for (let k = 0; k < 6; k++) {
+      const box = p.locator('.rs-git .rs-git-table input[type=checkbox]:not(:checked)').first();
+      if (!(await box.count())) break;
+      await box.click();
+      await p.waitForTimeout(50);
+    }
+    await click(p, 'rs.git-commit');
+    await fill(p, 'rs.commit-message', 'Ajoute le rapport et le script d’analyse');
+    await click(p, 'rs.commit-button');
+    await p.locator('[data-fk="rsd-close"]').click();
+    await p.locator('.rs-review [data-fk="rs.review-close"]').click();
+  }
+  await click(p, 'tb.tool-gitlab');
+  await p.locator('.gl-logo').click();
+  await click(p, 'gl.project-link');
+  await expectDone(p, 'm4b');
+}
+async function missionB5(p, ide) {
+  await click(p, 'tb.tool-ide');
+  if (ide === 'vscode') {
+    await click(p, 'vs.scm');
+    await click(p, 'vs.publish');
+    await authWithVault(p, ide);
+  } else {
+    await click(p, 'rs.tab-git');
+    assert(await p.locator(T('rs.git-push')).first().isDisabled(), 'Push grisé sans branche suivie');
+    await click(p, 'rs.tab-terminal');
+    await termRun(p, ide, 'git push -u origin main');
+    await termRun(p, ide, 'stagiaire');
+    await click(p, 'tb.vault');
+    await p.locator(T('vault.copy')).last().click();
+    await p.keyboard.press('Escape');
+    await click(p, 'auth.paste');
+    await p.locator(T('rs.terminal-input')).press('Enter');
+  }
+  const w = await world(p);
+  const tree = w.remote.projects['stagiaire/etude-entreprises'].commits[0].tree;
+  assert(tree['rapport.qmd'] && !tree['entreprises.csv'], 'le premier push contient le travail, sans les données');
+  await click(p, 'tb.tool-gitlab');
+  await click(p, 'gl.nav-commits');
+  await click(p, 'gl.project-link');
+  await expectDone(p, 'm5b');
+}
+async function fullJourneyB(browser, base, ide) {
+  const p = await newPage(browser, base, { query: `?mission=m1b&ide=${ide}` });
+  await p.evaluate(() => localStorage.clear());
+  await p.reload({ waitUntil: 'networkidle' });
+  await missionB1(p); await shot(p, `${ide}-b1`);
+  await click(p, 'coach.next');
+  await mission2(p, 'm2b'); await shot(p, `${ide}-b2`);
+  await click(p, 'coach.next');
+  await missionB3(p, ide); await shot(p, `${ide}-b3`);
+  await click(p, 'coach.next');
+  await missionB4(p, ide); await shot(p, `${ide}-b4`);
+  await click(p, 'coach.next');
+  await missionB5(p, ide); await shot(p, `${ide}-b5`);
+  assert(!p.errors.length, 'erreurs JS : ' + p.errors.join(' | '));
+  return p;
+}
+
 // ---- lancement ----
 const srv = await serve();
 const base = `http://localhost:${srv.address().port}${PREFIX}`;
@@ -265,8 +394,10 @@ await check('le site fonctionne sous un sous-répertoire (pages, modules, styles
   assert(!p.errors.length, p.errors.join(' | '));
 });
 
-await check('parcours complet depuis un état vierge — VS Code', async () => { const p = await fullJourney(browser, base, 'vscode'); await p.context().close(); });
-await check('parcours complet depuis un état vierge — RStudio', async () => { const p = await fullJourney(browser, base, 'rstudio'); await p.context().close(); });
+await check('parcours A (de zéro) depuis un état vierge — VS Code', async () => { const p = await fullJourney(browser, base, 'vscode'); await p.context().close(); });
+await check('parcours A (de zéro) depuis un état vierge — RStudio', async () => { const p = await fullJourney(browser, base, 'rstudio'); await p.context().close(); });
+await check('parcours B (travail existant) depuis un état vierge — VS Code', async () => { const p = await fullJourneyB(browser, base, 'vscode'); await p.context().close(); });
+await check('parcours B (travail existant) depuis un état vierge — RStudio', async () => { const p = await fullJourneyB(browser, base, 'rstudio'); await p.context().close(); });
 
 await check('le jeton n’est plus affiché après avoir quitté sa page ; les indices ne valident rien', async () => {
   const p = await newPage(browser, base, { query: '?mission=m2' });

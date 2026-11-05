@@ -158,6 +158,11 @@ function push(app, { sync = false } = {}) {
   // Sans branche suivie, VS Code propose de publier la branche (git push -u origin main).
   const publish = !repo.upstream;
   if (publish) sync = false;
+  if (!repo.remote) {
+    notify(app, { kind: 'warn', text: 'Ce dépôt n’a pas encore de remote. Ajoute-le : … › Remote › Add Remote… (ou git remote add origin <URL>). VS Code proposerait aussi « Publish to GitHub », qui ne concerne pas GitLab.', actions: [{ label: 'Add Remote…', fn: () => startAddRemote(app) }] });
+    app.render();
+    return;
+  }
   if (sync && !s.syncConfirmed) {
     s.dialog = { kind: 'sync' };
     app.render();
@@ -270,7 +275,7 @@ export function menuBox(app, items, opener, stateObj) {
 
 function activityBar(app, repo) {
   const s = st(app);
-  const n = repo ? (() => { const x = E.status(repo); return x.staged.length + x.unstaged.length + x.untracked.length; })() : 0;
+  const n = repo && repo.git ? (() => { const x = E.status(repo); return x.staged.length + x.unstaged.length + x.untracked.length; })() : 0;
   const a = (k, label, ic, target, fn, badge) => h('button', { type: 'button', class: ['vs-act', s.side === k ? 'is-on' : ''], 'aria-label': label + (badge ? ` (${badge} changements)` : ''), title: label, 'aria-pressed': k ? String(s.side === k) : null, target, fk: target, on: { click: fn } }, icon(ic), badge ? h('span', { class: 'vs-badge', 'aria-hidden': 'true' }, String(badge)) : null);
   return h('nav', { class: 'vs-activity', 'aria-label': 'Barre d’activité' },
     a('explorer', 'Explorer', 'explorer', 'vs.explorer', () => { s.side = 'explorer'; s.mpane = 'side'; app.render(); }),
@@ -314,8 +319,9 @@ function explorerView(app, repo) {
     return [...head, h('ul', { class: 'vs-tree' }, kids.map((d) => h('li', {}, h('span', { class: 'vs-tree-item is-dir' }, icon('folder'), basename(d))))),
       h('p', { class: 'vs-note' }, 'Ce dossier n’est pas un dépôt Git. Ouvre le dossier du projet cloné (File › Open Folder…).')];
   }
-  const status = E.status(repo);
+  const status = repo.git ? E.status(repo) : { untracked: [], unstaged: [], staged: [] };
   const mark = (f) => {
+    if (!repo.git) return null;
     if (status.untracked.some((x) => x.path === f)) return ['U', 'is-u'];
     if (status.unstaged.some((x) => x.path === f) || status.staged.some((x) => x.path === f && x.kind === 'modified')) return ['M', 'is-m'];
     if (status.staged.some((x) => x.path === f && x.kind === 'new')) return ['A', 'is-a'];
@@ -346,6 +352,15 @@ function explorerView(app, repo) {
 
 function scmView(app, repo) {
   const s = st(app);
+  if (repo && repo.git === false) {
+    return [h('h2', { class: 'vs-side-title' }, 'Source Control'),
+      h('div', { class: 'vs-welcome' },
+        h('p', {}, 'The folder currently open doesn’t have a Git repository. You can initialize a repository which will enable source control features powered by Git.'),
+        btn('Initialize Repository', { cls: 'vs-btn', target: 'vs.init', on: () => initRepo(app) }),
+        h('p', {}, 'You can directly publish this folder to a GitHub repository.'),
+        h('button', { type: 'button', class: 'vs-btn', 'aria-disabled': 'true', title: 'Non simulé : ce bouton crée un dépôt sur GitHub, pas sur GitLab.' }, 'Publish to GitHub'),
+        h('p', { class: 'vs-note' }, 'Pour GitLab : initialise le dépôt, puis ajoute le remote origin (… › Remote › Add Remote…).'))];
+  }
   if (!repo) {
     return [h('h2', { class: 'vs-side-title' }, 'Source Control'),
       h('div', { class: 'vs-welcome' },
@@ -373,6 +388,7 @@ function scmView(app, repo) {
     { label: 'Push', target: 'vs.push', fn: () => push(app) },
     { label: 'Fetch', fn: () => pullOnly(app, true) },
     { label: 'Clone', fn: () => startClone(app) },
+    { label: 'Remote › Add Remote…', target: 'vs.add-remote', fn: () => startAddRemote(app) },
     { label: 'Checkout to…', oos: true },
     { sep: true },
     { label: 'Commit', fn: () => commit(app) },
@@ -403,7 +419,7 @@ function scmView(app, repo) {
       action),
     x.staged.length ? h('section', { class: 'vs-group' }, h('h3', {}, 'Staged Changes', h('span', { class: 'vs-count' }, String(x.staged.length))), h('ul', {}, x.staged.map((it) => row(it, true)))) : null,
     h('section', { class: 'vs-group' }, h('h3', {}, 'Changes', h('span', { class: 'vs-count' }, String(changes.length)),
-      changes.length ? btn('Stage All Changes', { icon: 'plus', hideLabel: true, cls: 'vs-icon-btn vs-group-act', fk: 'vs.stage-all', on: () => app.act((w) => E.stageAll(w, repo.path, IDE)) }) : null),
+      changes.length ? btn('Stage All Changes', { icon: 'plus', hideLabel: true, cls: 'vs-icon-btn vs-group-act', target: 'vs.stage-all', fk: 'vs.stage-all', on: () => app.act((w) => E.stageAll(w, repo.path, IDE)) }) : null),
     changes.length ? h('ul', {}, changes.map((it) => row(it, false))) : h('p', { class: 'vs-note' }, 'Aucune modification.')),
     graph(app, repo),
   ];
@@ -507,7 +523,7 @@ function panel(app) {
 function statusBar(app, repo) {
   const ahead = repo ? E.ahead(repo) : 0;
   return h('footer', { class: 'vs-status', 'aria-label': 'Barre d’état' },
-    repo ? h('span', { class: 'vs-status-item', target: 'vs.statusbar-branch', title: 'Branche courante' }, icon('branch'), repo.branch) : null,
+    repo && repo.git ? h('span', { class: 'vs-status-item', target: 'vs.statusbar-branch', title: 'Branche courante' }, icon('branch'), repo.branch) : null,
     repo && !repo.upstream ? h('button', { type: 'button', class: 'vs-status-item', target: 'vs.status-sync', fk: 'vs.status-sync', title: 'Publish Branch', 'aria-label': 'Publier la branche', disabled: !repo.commits.length, on: { click: () => push(app) } }, icon('up'), 'Publish Branch') : null,
     repo && repo.upstream ? h('button', { type: 'button', class: 'vs-status-item', target: 'vs.status-sync', fk: 'vs.status-sync', title: `Synchronize Changes : ${ahead} commit(s) à envoyer`, 'aria-label': `Synchroniser : 0 à recevoir, ${ahead} à envoyer`, on: { click: () => push(app, { sync: true }) } }, icon('sync'), `0↓ ${ahead}↑`) : null,
     h('span', { class: 'vs-spacer' }),
@@ -526,6 +542,8 @@ function notif(app, n) {
 
 const COMMANDS = [
   { id: 'clone', label: 'Git: Clone', run: (app) => startClone(app) },
+  { id: 'init', label: 'Git: Initialize Repository', run: (app) => initRepo(app) },
+  { id: 'remote', label: 'Git: Add Remote…', run: (app) => startAddRemote(app) },
   { id: 'open', label: 'File: Open Folder…', run: (app) => openFolderDialog(app) },
   { id: 'push', label: 'Git: Push', run: (app) => push(app) },
   { id: 'pull', label: 'Git: Pull', run: (app) => pullOnly(app) },
@@ -552,6 +570,11 @@ function quickInput(app) {
   } else if (q.kind === 'clone-url') {
     placeholder = 'Provide repository URL or pick a repository source.';
     items = [{ id: 'url', label: q.value.trim() ? `Clone from URL ${q.value.trim()}` : 'Repository URL', disabled: !q.value.trim() }, { id: 'gh', label: 'Clone from GitHub', oos: true }];
+  } else if (q.kind === 'remote-url') {
+    placeholder = 'Provide repository URL';
+  } else if (q.kind === 'remote-name') {
+    placeholder = 'Provide remote name';
+    prompt = `URL : ${q.url}`;
   } else if (q.kind === 'auth-user') {
     prompt = q.label;
     placeholder = 'Username';
@@ -570,6 +593,26 @@ function quickInput(app) {
       s.quick = null;
       s.picker = { title: 'Select as Repository Destination', button: 'Select as Repository Destination', dir: app.w.ws.home, note: 'Git créera dans ce dossier un sous-dossier portant le nom du dépôt.', onPick: (dir) => doClone(app, url, dir) };
       app.ui.focusAfter = 'pick.ok';
+      app.render();
+      return;
+    }
+    if (q.kind === 'remote-url') {
+      const url = q.value.trim();
+      if (!url) { q.err = 'Indique l’URL du dépôt (bouton Code de GitLab › Clone with HTTPS).'; app.render(); return; }
+      s.quick = { kind: 'remote-name', value: 'origin', url, err: null };
+      app.ui.focusAfter = 'vs.quickinput';
+      app.render();
+      return;
+    }
+    if (q.kind === 'remote-name') {
+      const name = q.value.trim();
+      const repo = repoOf(app);
+      if (name !== 'origin') { q.err = 'Dans ce parcours, le dépôt distant s’appelle origin.'; app.render(); return; }
+      s.quick = null;
+      log(s, [`> git remote add ${name} ${q.url.replace(/\/\/[^@/]*@/, '//')}`]);
+      const r = app.act((w) => E.addRemote(w, repo.path, name, q.url, { via: IDE }), { render: false });
+      if (r.code === 'secret-in-url') notify(app, { kind: 'warn', text: 'Simulation : une URL contenant un jeton est refusée. Elle serait enregistrée en clair dans .git/config. Utilise l’URL HTTPS seule ; Git demandera le jeton au push.' });
+      else if (!r.ok) notify(app, { kind: 'error', text: 'Git: ' + gist(r.out) });
       app.render();
       return;
     }
@@ -631,4 +674,23 @@ function dialog(app, repo) {
   return h('div', { class: 'vs-overlay' }, h('div', { class: 'vs-dialog', 'data-anim': 'vsd-' + d.kind, role: 'alertdialog', 'aria-modal': 'true', 'aria-label': title, on: { keydown: (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } trapFocus(e.currentTarget, e); } } },
     h('div', { class: 'vs-dialog-body' }, icon('info'), h('div', {}, body)),
     h('div', { class: 'vs-dialog-actions' }, actions.map(([l, fn, primary], i) => btn(l, { cls: primary ? 'vs-btn vs-btn-primary' : 'vs-btn', fk: 'vs.dlg-' + i, target: primary ? 'vs.dialog-ok' : null, on: fn })))));
+}
+
+function initRepo(app) {
+  const s = st(app);
+  const repo = repoOf(app);
+  s.menu = null;
+  if (!repo) { notify(app, { kind: 'info', text: 'Ouvre d’abord un dossier (File › Open Folder…).' }); app.render(); return; }
+  log(s, ['> git init -b main']);
+  app.act((w) => E.initRepo(w, repo.path, { via: IDE }));
+}
+
+function startAddRemote(app) {
+  const s = st(app);
+  const repo = repoOf(app);
+  s.menu = null;
+  if (!repo || !repo.git) { notify(app, { kind: 'info', text: 'Il faut d’abord un dépôt Git : Initialize Repository.' }); app.render(); return; }
+  s.quick = { kind: 'remote-url', value: '', err: null };
+  app.ui.focusAfter = 'vs.quickinput';
+  app.render();
 }

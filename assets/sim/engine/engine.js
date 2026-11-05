@@ -417,10 +417,25 @@ export function status(repo) {
   for (const p of [...paths].sort()) {
     const h = head[p], i = repo.index[p], wk = repo.work[p];
     if (i !== h) staged.push({ path: p, kind: h === undefined ? 'new' : (i === undefined ? 'deleted' : 'modified') });
-    if (i === undefined && h === undefined) { if (wk !== undefined) untracked.push({ path: p, kind: 'untracked' }); continue; }
+    if (i === undefined && h === undefined) { if (wk !== undefined && !isIgnored(repo, p)) untracked.push({ path: p, kind: 'untracked' }); continue; }
     if (wk !== i) unstaged.push({ path: p, kind: wk === undefined ? 'deleted' : 'modified' });
   }
   return { staged, unstaged, untracked, clean: !staged.length && !unstaged.length && !untracked.length };
+}
+
+/** Règles de .gitignore (sous-ensemble : nom exact, motif *.ext, préfixe*, commentaires). */
+export function isIgnored(repo, file) {
+  const gi = repo.work['.gitignore'];
+  if (!gi || file === '.gitignore') return false;
+  return gi.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#')).some((pat) => {
+    const p = pat.replace(/^\//, '').replace(/\/$/, '');
+    if (p === file) return true;
+    if (p.includes('*')) {
+      const re = new RegExp('^' + p.split('*').map((x) => x.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$');
+      return re.test(file);
+    }
+    return false;
+  });
 }
 
 /** Commits créés dans ce dépôt local depuis le clonage. */
@@ -437,7 +452,7 @@ function makeRepo(w, path, project, url) {
   const commits = clone(project.commits);
   const tree = commits.length ? commits[commits.length - 1].tree : {};
   return {
-    path, name: basename(path),
+    path, name: basename(path), git: true,
     remote: { name: 'origin', url },
     branch: project.defaultBranch,
     commits,
@@ -549,6 +564,11 @@ export function deleteFile(w, repoPath, file) {
 export function stage(w, repoPath, files, via = 'terminal') {
   const repo = w.ws.repos[repoPath];
   const done = [];
+  const ignored = files.filter((f) => repo.index[f] === undefined && isIgnored(repo, f));
+  if (ignored.length) {
+    emit(w, 'stage-ignored', { path: repoPath, files: ignored, via });
+    return { ok: false, code: 'ignored', out: ['The following paths are ignored by one of your .gitignore files:', ...ignored, 'hint: Use -f if you really want to add them.', 'hint: Disable this message with "git config set advice.addIgnoredFile false"'] };
+  }
   for (const f of files) {
     if (repo.work[f] === undefined && repo.index[f] === undefined) return { ok: false, out: [`fatal: pathspec '${f}' did not match any files`] };
     if (repo.work[f] === undefined) delete repo.index[f]; else repo.index[f] = repo.work[f];
@@ -647,11 +667,17 @@ const isAncestor = (commits, id) => !id || commits.some((c) => c.id === id);
 
 export function push(w, repoPath, { auth, via = 'terminal', explicit = false, setUpstream = false } = {}) {
   const repo = w.ws.repos[repoPath];
-  const u = parseRepoUrl(repo.remote.url);
   if (!repo.commits.length) {
     emit(w, 'push-fail', { reason: 'no-commit', via });
-    return { ok: false, code: 'no-commit', out: [`error: src refspec ${repo.branch} does not match any`, `error: failed to push some refs to '${repo.remote.url}'`] };
+    return { ok: false, code: 'no-commit', out: [`error: src refspec ${repo.branch} does not match any`, `error: failed to push some refs to '${repo.remote ? repo.remote.url : 'origin'}'`] };
   }
+  if (!repo.remote) {
+    emit(w, 'push-fail', { reason: 'no-remote', via });
+    return { ok: false, code: 'no-remote', out: explicit
+      ? ["fatal: 'origin' does not appear to be a git repository", 'fatal: Could not read from remote repository.', '', 'Please make sure you have the correct access rights', 'and the repository exists.']
+      : ['fatal: No configured push destination.', 'Either specify the URL from the command-line or configure a remote repository using', '', '    git remote add <name> <url>', '', 'and then push using the remote name', '', '    git push <name>', ''] };
+  }
+  const u = parseRepoUrl(repo.remote.url);
   if (!repo.upstream && !explicit) {
     emit(w, 'push-fail', { reason: 'no-upstream', via });
     return { ok: false, code: 'no-upstream', out: [`fatal: The current branch ${repo.branch} has no upstream branch.`, 'To push the current branch and set the remote as upstream, use', '', `    git push --set-upstream origin ${repo.branch}`, ''] };
@@ -717,10 +743,11 @@ export function push(w, repoPath, { auth, via = 'terminal', explicit = false, se
 /** Pull / fetch : n'intègre que des avances rapides (le parcours n'a jamais de travail concurrent). */
 export function pull(w, repoPath, { auth, via = 'terminal', fetchOnly = false } = {}) {
   const repo = w.ws.repos[repoPath];
-  const u = parseRepoUrl(repo.remote.url);
+  if (!repo.remote) return { ok: false, code: 'no-remote', out: ["fatal: 'origin' does not appear to be a git repository", 'fatal: Could not read from remote repository.'] };
   if (!fetchOnly && !repo.upstream) {
     return { ok: false, code: 'no-upstream', out: ['There is no tracking information for the current branch.', 'Please specify which branch you want to merge with.', '', `    git branch --set-upstream-to=origin/<branch> ${repo.branch}`, ''] };
   }
+  const u = parseRepoUrl(repo.remote.url);
   if (u.kind === 'ssh') return { ok: false, code: 'ssh', out: [...MSG.ssh] };
   const a = resolveAuth(w, auth);
   if (a.needAuth) { emit(w, 'auth-prompt', { op: 'pull', via }); return { ok: false, needAuth: true, prompts: authPrompts() }; }
@@ -754,10 +781,10 @@ export function pull(w, repoPath, { auth, via = 'terminal', fetchOnly = false } 
 /** Les quatre zones du parcours : fichiers de travail, préparation, historique local, GitLab. */
 export function flowOf(w, repoPath) {
   const repo = repoPath && w.ws.repos[repoPath];
-  if (!repo) return null;
+  if (!repo || repo.git === false) return null;
   const st = status(repo);
-  const u = parseRepoUrl(repo.remote.url);
-  const p = getProject(w, u.ns, u.path);
+  const u = repo.remote ? parseRepoUrl(repo.remote.url) : {};
+  const p = repo.remote ? getProject(w, u.ns, u.path) : null;
   return {
     working: [...st.unstaged, ...st.untracked],
     staged: st.staged,
@@ -791,4 +818,47 @@ export function messageQuality(msg) {
   if (m.length < 10 || words.length < 2) return { ok: false, reason: 'court' };
   if (!content.length) return { ok: false, reason: 'vague' };
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------
+// Travail existant : dossier non suivi, git init, remote
+// ---------------------------------------------------------------------
+
+/** Dossier de travail existant, pas encore suivi par Git (ex. un pod Onyxia). */
+export function makeFolder(w, path, files, { rstudio = false } = {}) {
+  const f = {
+    path, name: basename(path), git: false, remote: null, branch: 'main',
+    commits: [], originHead: null, upstream: false, base: 0,
+    index: {}, work: clone(files), config: {},
+  };
+  w.ws.repos[path] = f;
+  if (!w.ws.dirs.includes(path)) w.ws.dirs.push(path);
+  if (rstudio) addRStudioFiles(f);
+  return f;
+}
+
+export function initRepo(w, path, { branch = 'main', via = 'terminal' } = {}) {
+  const repo = w.ws.repos[path];
+  if (!repo) return { ok: false, out: [`fatal: cannot change to '${path}': No such file or directory`] };
+  if (repo.git) return { ok: true, out: [`Reinitialized existing Git repository in ${path}/.git/`] };
+  repo.git = true;
+  repo.branch = branch;
+  emit(w, 'init', { path, via, branch });
+  const hint = branch === 'main' ? [] : [];
+  return { ok: true, out: [...hint, `Initialized empty Git repository in ${path}/.git/`], summary: `${path} est maintenant un dépôt Git local, sans commit ni remote.` };
+}
+
+export function addRemote(w, path, name, url, { via = 'terminal', setUrl = false } = {}) {
+  const repo = w.ws.repos[path];
+  const u = parseRepoUrl(url);
+  if (u.kind === 'https' && u.hasSecret) { emit(w, 'remote-fail', { reason: 'secret-in-url', via }); return { ok: false, code: 'secret-in-url', out: [] }; }
+  if (name !== 'origin') return { ok: false, code: 'name', out: [], summary: null };
+  if (setUrl) {
+    if (!repo.remote) return { ok: false, out: [`error: No such remote '${name}'`] };
+  } else if (repo.remote) return { ok: false, code: 'exists', out: [`error: remote ${name} already exists.`] };
+  const clean = u.kind === 'https' ? u.clean : String(url).trim();
+  repo.remote = { name, url: clean };
+  repo.upstream = false;
+  emit(w, 'remote-add', { path, via, url: clean, ssh: u.kind === 'ssh', set: setUrl });
+  return { ok: true, out: [], summary: `Le dépôt local connaît maintenant le dépôt distant « ${name} » : ${clean}.` };
 }

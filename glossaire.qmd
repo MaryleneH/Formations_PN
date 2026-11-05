@@ -41,6 +41,15 @@ toc: false
 [Remote (origin)]{#remote}
 :   Le lien enregistré entre le dépôt local et le dépôt distant. Le clonage le crée sous le nom `origin` ; `git remote -v` l’affiche.
 
+[git init]{#init}
+:   Fait d’un dossier existant un dépôt Git local : crée le sous-dossier caché `.git`, avec un historique vide. Les fichiers ne changent pas. Situation B : le travail existe déjà dans le pod.
+
+[.gitignore]{#gitignore}
+:   Fichier, à la racine du projet, qui liste ce que Git doit ignorer : données, fichiers temporaires. Un fichier ignoré reste sur le disque mais n’entre jamais dans l’historique.
+
+[Branche suivie (upstream)]{#upstream}
+:   La branche distante associée à la branche locale (`origin/main`). Le premier envoi d’une branche l’enregistre : `git push -u origin main`. Ensuite, `git push` suffit.
+
 [Commit]{#commit}
 :   Une version enregistrée dans l’historique, avec un message, un auteur et une date. Il reste local tant qu’il n’est pas envoyé.
 

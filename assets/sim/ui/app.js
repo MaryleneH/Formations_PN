@@ -92,6 +92,7 @@ export class App {
   }
 
   next() {
+    if (this.mission.next) return this.enter(this.mission.next);
     const list = CATALOG.map((m) => m.id);
     const i = list.indexOf(this.mission.id);
     if (i >= 0 && i < list.length - 1) this.enter(list[i + 1]);
@@ -311,6 +312,7 @@ export class App {
       btn('Missions', { icon: 'list', cls: 'sim-btn sim-btn-ghost sim-missions-btn', target: 'top.missions', attrs: { 'aria-expanded': String(!!this.ui.drawer), 'aria-controls': 'sim-drawer' }, on: () => { this.ui.drawer = true; this.render(); const f = this.root.querySelector('.sim-drawer [aria-current="true"]') || this.root.querySelector('.sim-drawer button'); if (f) f.focus(); } }),
       h('div', { class: 'sim-top-title' },
         h('span', { class: 'sim-top-num' }, m.group === 'm6' ? `Exercice ${m.num}` : `Mission ${m.num}`),
+        m.track ? h('span', { class: 'sim-chip sim-track' }, m.track === 'A' ? 'Démarrer de zéro' : 'Travail existant') : null,
         h('span', { class: 'sim-top-name' }, m.title)),
       h('div', { class: 'sim-top-actions' },
         modeSeg,
