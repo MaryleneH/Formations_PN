@@ -235,6 +235,7 @@ function menuBar(app, proj) {
   const fileBtn = h('button', { type: 'button', class: ['rs-menubtn', open === 'file' ? 'is-on' : ''], 'aria-expanded': String(open === 'file'), 'aria-haspopup': 'menu', target: 'rs.menu-file', fk: 'rs.menu-file', on: { click: () => { s.menu = open === 'file' ? null : 'file'; app.render(); } } }, 'File');
   const projBtn = h('button', { type: 'button', class: ['rs-project-btn', open === 'project' ? 'is-on' : ''], 'aria-expanded': String(open === 'project'), 'aria-haspopup': 'menu', target: 'rs.project-menu', fk: 'rs.project-menu', on: { click: () => { s.menu = open === 'project' ? null : 'project'; app.render(); } } }, icon('r'), proj ? basename(proj) : 'Project: (None)', icon('down', 'ico-sm'));
   const oosMenu = (l) => h('span', { class: 'rs-menubtn is-oos', title: 'Non simulé' }, l);
+  const toolsBtn = h('button', { type: 'button', class: ['rs-menubtn', open === 'tools' ? 'is-on' : ''], 'aria-expanded': String(open === 'tools'), 'aria-haspopup': 'menu', target: 'rs.menu-tools', fk: 'rs.menu-tools', on: { click: () => { s.menu = open === 'tools' ? null : 'tools'; app.render(); } } }, 'Tools');
   return h('div', { class: 'rs-top' },
     h('nav', { class: 'rs-menubar', 'aria-label': 'Menu RStudio' },
       h('div', { class: 'vs-menuwrap' }, fileBtn, open === 'file' ? menuBox(app, [
@@ -246,7 +247,12 @@ function menuBar(app, proj) {
         { sep: true },
         { label: 'Close Project', fn: () => { s.docs = []; s.doc = -1; s.rtop = 'environment'; app.act((w) => { w.ws.opened.rstudio = null; return {}; }); }, disabled: !proj },
       ], fileBtn, s) : null),
-      oosMenu('Edit'), oosMenu('Code'), oosMenu('View'), oosMenu('Plots'), oosMenu('Session'), oosMenu('Build'), oosMenu('Debug'), oosMenu('Profile'), oosMenu('Tools'), oosMenu('Help')),
+      oosMenu('Edit'), oosMenu('Code'), oosMenu('View'), oosMenu('Plots'), oosMenu('Session'), oosMenu('Build'), oosMenu('Debug'), oosMenu('Profile'),
+      h('div', { class: 'vs-menuwrap' }, toolsBtn, open === 'tools' ? menuBox(app, [
+        { label: 'Version Control › Project Setup…', target: 'rs.vc-setup', fn: () => vcSetup(app) },
+        { label: 'Global Options…', oos: true },
+      ], toolsBtn, s) : null),
+      oosMenu('Help')),
     h('div', { class: 'rs-toolbar' },
       btn('Save current document', { icon: 'save', hideLabel: true, cls: 'rs-tool', target: 'rs.save-top', disabled: s.doc < 0, on: () => save(app) }),
       h('span', { class: 'rs-goto', 'aria-hidden': 'true' }, icon('search'), 'Go to file/function'),
@@ -317,12 +323,12 @@ function consolePane(app) {
 function envPane(app, repo) {
   const s = st(app);
   const tabs = [['environment', 'Environment'], ['history', 'History', null, true], ['connections', 'Connections', null, true]];
-  if (repo) tabs.push(['git', 'Git', 'rs.tab-git']);
+  if (repo && repo.git) tabs.push(['git', 'Git', 'rs.tab-git']);
   tabs.push(['tutorial', 'Tutorial', null, true]);
-  const cur = s.rtop === 'git' && !repo ? 'environment' : s.rtop;
+  const cur = s.rtop === 'git' && !(repo && repo.git) ? 'environment' : s.rtop;
   return h('section', { class: 'rs-pane rs-env', 'aria-label': cur === 'git' ? 'Git' : 'Environment' },
     paneTabs(app, 'rtop', tabs, cur, 'Environnement et Git'),
-    cur === 'git' ? gitPane(app, repo) : h('div', { class: 'rs-empty' }, h('p', {}, 'Environment is empty'), repo ? null : h('p', { class: 'rs-note' }, 'L’onglet Git apparaît quand un projet RStudio placé dans un dépôt Git est ouvert.'), repo ? null : openExisting(app)));
+    cur === 'git' ? gitPane(app, repo) : h('div', { class: 'rs-empty' }, h('p', {}, 'Environment is empty'), repo && repo.git ? null : h('p', { class: 'rs-note' }, repo ? 'Ce projet n’est pas encore un dépôt Git : l’onglet Git apparaîtra après Tools › Version Control › Project Setup… › Git.' : 'L’onglet Git apparaît quand un projet RStudio placé dans un dépôt Git est ouvert.'), repo ? null : openExisting(app)));
 }
 
 /** Un dépôt cloné existe (par exemple depuis l'autre IDE ou le terminal) : proposer de l'ouvrir. */
@@ -457,6 +463,29 @@ function dialogView(app, d, top) {
     body = h('div', { class: 'rs-form' }, h('label', { for: 'rs-nf' }, 'File name:'), h('input', { id: 'rs-nf', type: 'text', value: d.value, fk: 'rs.newfile-input', on: { input: (e) => { d.value = e.target.value; }, keydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } } } }),
       d.err ? h('p', { class: 'sim-field-error', role: 'alert' }, d.err) : null);
     actions = [['OK', submit, true, 'rsd-first'], ['Cancel', close]];
+  } else if (d.kind === 'vcsetup') {
+    title = 'Project Options';
+    body = h('div', { class: 'rs-form' }, h('p', { class: 'rs-wiz-h' }, 'Git/SVN'),
+      h('label', { for: 'rs-vcs' }, 'Version control system:'),
+      h('select', { id: 'rs-vcs', target: 'rs.vc-git', fk: 'rs.vc-git', on: { change: (e) => { d.value = e.target.value; } } },
+        h('option', { value: 'none', selected: d.value !== 'git' }, '(None)'), h('option', { value: 'git', selected: d.value === 'git' }, 'Git')));
+    actions = [['OK', () => {
+      if (d.value !== 'git') { close(); return; }
+      s.dialogs = [{ kind: 'vcconfirm', focus: 'rs.vc-yes' }];
+      app.ui.focusAfter = 'rs.vc-yes';
+      app.render();
+    }, true, 'rs.vc-ok', 'rs.vc-ok'], ['Cancel', close]];
+  } else if (d.kind === 'vcconfirm') {
+    title = 'Confirm New Git Repository';
+    body = h('p', {}, 'Do you want to initialize a new git repository for this project?');
+    actions = [['Yes', () => {
+      s.dialogs = [];
+      const repo = repoOf(app);
+      app.act((w) => E.initRepo(w, repo.path, { via: IDE }), { summary: 'Dépôt Git initialisé (git init). RStudio redémarre la session : l’onglet Git apparaît.' });
+      s.rtop = 'git';
+      app.ui.focusAfter = 'rs.tab-git';
+      app.render();
+    }, true, 'rs.vc-yes', 'rs.vc-yes'], ['No', close]];
   } else if (d.kind === 'review') return reviewWindow(app, d, top);
   return h('div', { class: ['rs-overlay', top ? '' : 'is-under'] }, h('div', { class: ['rs-dialog', cls], 'data-anim': 'rsd-' + d.kind + (d.title || ''), role: 'dialog', 'aria-modal': 'true', 'aria-label': title, on: { keydown: (e) => { if (e.key === 'Escape') { e.stopPropagation(); if (d.kind === 'auth' && d.cancel) { popDialog(app); d.cancel(); } else close(); } trapFocus(e.currentTarget, e); } } },
     h('div', { class: 'rs-dialog-title' }, h('span', {}, title)),
@@ -594,4 +623,14 @@ function reviewWindow(app, d, top) {
       h('button', { type: 'button', class: 'rs-gbtn rs-push', fk: 'rs.review-push', target: 'rs.git-push', disabled: !repo.upstream, title: repo.upstream ? 'Push' : NO_UPSTREAM, on: { click: () => doPush(app) } }, icon('up'), 'Push')),
     h('div', { class: 'rs-review-main' }, main));
   return h('div', { class: ['rs-overlay rs-overlay-review', top ? '' : 'is-under'] }, box);
+}
+
+function vcSetup(app) {
+  const s = st(app);
+  s.menu = null;
+  if (!projectPath(app)) { pushDialog(app, { kind: 'message', title: 'Project Options', text: 'Ouvre d’abord un projet RStudio (File › Open Project…).' }); app.render(); return; }
+  const repo = repoOf(app);
+  if (repo && repo.git) { pushDialog(app, { kind: 'message', title: 'Project Options', text: 'Ce projet est déjà suivi par Git.' }); app.render(); return; }
+  pushDialog(app, { kind: 'vcsetup', value: 'none', focus: 'rs.vc-git' });
+  app.render();
 }

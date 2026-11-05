@@ -20,7 +20,7 @@ function play(ide) {
   // Mission 1
   let { world: w } = P.enter(store, 'm1', ide);
   view(w, 'new-blank');
-  assert.ok(E.createProject(w, { name: 'etude-entreprises', visibility: 'private', readme: false }).ok);
+  assert.ok(E.createProject(w, { name: 'etude-entreprises', visibility: 'private', readme: true }).ok);
   view(w, 'project', { project: 'stagiaire/etude-entreprises' });
   answerAll('m1');
   assert.ok(step('m1').complete, 'm1');
@@ -45,8 +45,8 @@ function play(ide) {
   assert.equal(r.needAuth, true);
   r = E.cloneRepo(w, { url: E.httpsUrl('stagiaire', 'etude-entreprises'), parentDir: PRJ, via: ide, rstudioProject: ide === 'rstudio', auth: { username: 'stagiaire', secret: t.value } });
   assert.ok(r.ok);
-  assert.match(r.out.join('\n'), /You appear to have cloned an empty repository/);
   E.openFolder(w, ide, r.repo.path);
+  E.emit(w, 'open-file', { file: 'README.md' });
   S.run(w, 'git remote -v');
   answerAll('m3');
   assert.ok(step('m3').complete, 'm3');
@@ -54,7 +54,7 @@ function play(ide) {
   // Mission 4
   w = P.enter(store, 'm4', ide).world;
   const path = r.repo.path;
-  E.writeFile(w, path, 'README.md', '# etude-entreprises\n\nÉtude fictive sur la démographie des entreprises.\n');
+  E.writeFile(w, path, 'README.md', w.ws.repos[path].work['README.md'] + '\nÉtude fictive sur la démographie des entreprises.\n');
   E.emit(w, 'diff-view', { via: ide });
   E.stage(w, path, ['README.md'], ide);
   assert.ok(E.commit(w, path, { message: 'modif', via: ide }).ok);
@@ -62,14 +62,11 @@ function play(ide) {
   assert.ok(E.commit(w, path, { message: 'Décrit l’objectif de l’étude dans le README', amend: true, via: ide }).ok);
   view(w, 'project', { project: 'stagiaire/etude-entreprises' });
   assert.ok(step('m4').complete, 'm4');
-  assert.equal(E.getProject(w, 'stagiaire', 'etude-entreprises').commits.length, 0);
+  assert.equal(E.getProject(w, 'stagiaire', 'etude-entreprises').commits.length, 1);
 
-  // Mission 5 : premier envoi, qui crée la branche main sur GitLab
+  // Mission 5
   w = P.enter(store, 'm5', ide).world;
-  assert.equal(E.push(w, path, { via: ide }).code, 'no-upstream');
-  const first = E.push(w, path, { via: ide, explicit: true, setUpstream: true });
-  assert.ok(first.ok);
-  assert.ok(first.out.includes(' * [new branch]      main -> main'));
+  assert.ok(E.push(w, path, { via: ide }).ok);
   view(w, 'commits', { project: 'stagiaire/etude-entreprises' });
   view(w, 'file', { project: 'stagiaire/etude-entreprises', file: 'README.md' });
   assert.ok(step('m5').complete, 'm5');
@@ -80,9 +77,66 @@ test('parcours complet depuis un état vierge — VS Code', () => { play('vscode
 test('parcours complet depuis un état vierge — RStudio', () => {
   const store = play('rstudio');
   const p = E.getProject(store.worlds.parcours, 'stagiaire', 'etude-entreprises');
-  assert.equal(p.commits.length, 1);
-  assert.ok(p.commits[0].tree['etude-entreprises.Rproj'] === undefined, 'seul README a été préparé');
+  assert.ok(p.commits[1].tree['etude-entreprises.Rproj'] === undefined, 'seul README a été préparé');
 });
+
+
+function playB(ide) {
+  const store = P.blankStore();
+  const step = (id) => P.evaluate(store, byId(id), ide);
+  const answerAll = (id) => { const m = byId(id); for (const s of m.steps.filter((x) => x.kind === 'quiz')) P.answer(store, m, s.id, s.options.find((o) => o.correct).id); };
+  const F = '/home/stagiaire/projets/etude-entreprises';
+  // B1 : projet vide ; le dossier existe déjà dans le pod
+  let { world: w } = P.enter(store, 'm1b', ide);
+  assert.equal(w.ws.repos[F].git, false);
+  view(w, 'new-blank');
+  assert.ok(E.createProject(w, { name: 'etude-entreprises', readme: false }).ok);
+  view(w, 'project', { project: 'stagiaire/etude-entreprises' });
+  answerAll('m1b');
+  assert.ok(step('m1b').complete, 'm1b');
+  // B2 : accès
+  w = P.enter(store, 'm2b', ide).world;
+  E.copy(w, { kind: 'url', text: E.httpsUrl('stagiaire', 'etude-entreprises') });
+  view(w, 'tokens');
+  const t = E.createToken(w, { name: 'pod-onyxia', scopes: ['write_repository'] }).token;
+  E.copy(w, { kind: 'token', text: t.value, tokenId: t.id });
+  E.vaultSave(w, { label: 'GitLab', value: t.value });
+  E.hideTokenValue(w);
+  answerAll('m2b');
+  assert.ok(step('m2b').complete, 'm2b');
+  // B3 : git init + remote
+  w = P.enter(store, 'm3b', ide).world;
+  E.initRepo(w, F, { via: ide });
+  E.addRemote(w, F, 'origin', E.httpsUrl('stagiaire', 'etude-entreprises'), { via: ide });
+  S.run(w, 'git remote -v');
+  answerAll('m3b');
+  assert.ok(step('m3b').complete, 'm3b');
+  // B4 : .gitignore, préparation, premier commit
+  w = P.enter(store, 'm4b', ide).world;
+  const f = w.ws.repos[F];
+  E.writeFile(w, F, '.gitignore', (f.work['.gitignore'] || '') + '*.csv\n');
+  assert.ok(!E.status(f).untracked.some((x) => x.path === 'entreprises.csv'));
+  E.stageAll(w, F, ide);
+  assert.ok(E.commit(w, F, { message: 'Ajoute le rapport et le script d’analyse', via: ide }).ok);
+  view(w, 'project', { project: 'stagiaire/etude-entreprises' });
+  assert.ok(step('m4b').complete, 'm4b');
+  // B5 : premier push
+  w = P.enter(store, 'm5b', ide).world;
+  assert.equal(E.push(w, F, { via: ide }).code, 'no-upstream');
+  const first = E.push(w, F, { via: ide, explicit: true, setUpstream: true });
+  assert.equal(first.needAuth, true, 'premier échange avec GitLab : le jeton est demandé');
+  assert.ok(E.push(w, F, { via: ide, explicit: true, setUpstream: true, auth: { username: 'stagiaire', secret: t.value } }).ok);
+  view(w, 'commits', { project: 'stagiaire/etude-entreprises' });
+  view(w, 'project', { project: 'stagiaire/etude-entreprises' });
+  assert.ok(step('m5b').complete, 'm5b');
+  const tree = E.getProject(w, 'stagiaire', 'etude-entreprises').commits[0].tree;
+  assert.equal(tree['entreprises.csv'], undefined, 'les données restent dans le pod');
+  assert.ok(tree['rapport.qmd'] && tree['analyse.R'] && tree['.gitignore']);
+  return store;
+}
+
+test('parcours B complet (travail existant) — VS Code', () => { playB('vscode'); });
+test('parcours B complet (travail existant) — RStudio', () => { playB('rstudio'); });
 
 test('chaque mission démarre depuis sa situation initiale, et les exercices de dépannage reproduisent leur panne', () => {
   for (const ide of ['vscode', 'rstudio']) {
@@ -124,7 +178,7 @@ test('recommencer une mission conserve la progression des autres', () => {
   assert.deepEqual(store.progress.m4.steps, {});
   const w = store.worlds.parcours;
   const repo = Object.values(w.ws.repos)[0];
-  assert.equal(repo.commits.length, 0, 'le monde repart du début de la mission 4 (dépôt vide)');
+  assert.equal(repo.commits.length, 1, 'le monde repart du début de la mission 4 (clone du projet avec README)');
 });
 
 test('exercice 6.5 de bout en bout : 403, nouveau jeton, oubli des identifiants, push', () => {

@@ -225,14 +225,19 @@ function renderChanged(app) {
 function renderFlow(app) {
   const w = app.w;
   const m = app.mission;
-  const repo = E.currentRepo(w, app.ide) || Object.values(w.ws.repos).find((r) => m.params && r.remote.url === E.httpsUrl(m.params.ns || 'stagiaire', m.params.project)) || null;
+  const repo = E.currentRepo(w, app.ide) || Object.values(w.ws.repos).find((r) => m.params && r.remote && r.remote.url === E.httpsUrl(m.params.ns || 'stagiaire', m.params.project)) || null;
   const f = repo ? E.flowOf(w, repo.path) : null;
   const p = m.params && E.getProject(w, m.params.ns || 'stagiaire', m.params.project);
   const pulse = new Set(app.ui.pulse || []);
   app.ui.pulse = [];
   const zone = (key, title, value, detail, ic) => h('li', { class: ['flow-zone', 'flow-' + key, pulse.has(key) ? 'is-pulse' : ''] },
     h('span', { class: 'flow-ico' }, icon(ic)), h('span', { class: 'flow-title' }, title), h('strong', { class: 'flow-value' }, value), h('span', { class: 'flow-detail' }, detail));
-  const items = f ? [
+  const items = repo && !repo.git ? [
+    zone('working', 'Fichiers', String(Object.keys(repo.work).length), 'non suivis par Git', 'file'),
+    zone('staged', 'Préparé', '—', 'pas de dépôt Git', 'check'),
+    zone('local', 'Local', '—', 'git init à faire', 'commit'),
+    zone('remote', 'GitLab', p ? String(p.commits.length) : '—', p ? 'commit(s)' : 'pas de projet', 'gitlab'),
+  ] : f ? [
     zone('working', 'Fichiers', String(f.working.length), f.working.length ? f.working.map((x) => x.path).join(', ') : 'rien à préparer', 'file'),
     zone('staged', 'Préparé', String(f.staged.length), f.staged.length ? f.staged.map((x) => x.path).join(', ') : 'vide', 'check'),
     zone('local', 'Local', `${f.local}`, f.ahead ? `${f.ahead} à envoyer` : 'à jour', 'commit'),

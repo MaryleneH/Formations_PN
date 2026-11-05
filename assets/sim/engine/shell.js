@@ -23,6 +23,9 @@ export const SUPPORTED = [
   ['git push [origin main]', 'envoie les commits vers GitLab'],
   ['git pull / git fetch', 'récupère depuis GitLab'],
   ['git remote -v', 'affiche l’adresse du dépôt distant'],
+  ['git init -b main', 'fait d’un dossier existant un dépôt Git'],
+  ['git remote add origin <url>', 'relie le dépôt local au dépôt distant'],
+  ['git remote set-url origin <url>', 'change l’adresse du dépôt distant'],
   ['git log [--oneline] [-n N]', 'historique local'],
   ['git branch', 'branche courante'],
   ['git config [--global] user.name "Nom"', 'identité inscrite dans les commits'],
@@ -85,7 +88,7 @@ function children(w, dir, all) {
   const repo = E.repoAt(w, dir);
   const files = repo ? Object.keys(repo.work).filter((f) => all || !f.startsWith('.')) : [];
   const res = [...dirs, ...files].sort((a, b) => a.localeCompare(b));
-  if (all) res.unshift('./', '../', ...(repo ? ['.git/'] : []));
+  if (all) res.unshift('./', '../', ...(repo && repo.git ? ['.git/'] : []));
   return res;
 }
 
@@ -216,7 +219,15 @@ function git(w, args, ctx) {
   if (sub === '--version' || sub === 'version') return { out: [line('git version 2.51.0 (simulation)')] };
   if (sub === 'config') return config(w, rest);
   if (sub === 'clone') return gitClone(w, rest, ctx);
-  if (sub === 'init') return { out: [limit('git init crée un dépôt sans lien avec GitLab. Ce parcours part d’un projet GitLab que l’on clone : utilise git clone <url>.')], code: 'unsupported' };
+  if (sub === 'init') {
+    const target = E.repoFor(w, w.ws.cwd);
+    if (!target || target.path !== w.ws.cwd) return { out: [limit('Dans ce simulateur, git init s’utilise à la racine d’un dossier de projet (par exemple ~/projets/etude-entreprises).')], code: 'unsupported' };
+    const b = rest.indexOf('-b') >= 0 ? rest[rest.indexOf('-b') + 1] : (rest.find((a) => a.startsWith('--initial-branch=')) || '').split('=')[1];
+    const res = E.initRepo(w, target.path, { branch: b || 'main', via: ctx.via || 'terminal' });
+    const out = (res.out || []).map((t) => line(t));
+    if (!b && String(res.out[0]).startsWith('Initialized')) out.unshift(limit('Branche initiale : main (valeur de init.defaultBranch supposée par le simulateur). Pour l’imposer : git init -b main'));
+    return { out, ok: res.ok, summary: res.summary };
+  }
   if (sub === 'credential' || sub === 'credential-cache' || sub === 'credential-store') {
     return { out: [limit('Pour effacer un jeton mémorisé, ouvre « Identifiants » dans la barre d’outils du bac à sable. Dans tes vrais outils, la méthode dépend du gestionnaire (voir la fiche « Je le fais dans mes outils »).')], code: 'unsupported' };
   }
@@ -225,7 +236,7 @@ function git(w, args, ctx) {
   if (!known.includes(sub)) {
     return { out: [line(`git: '${redact(sub)}' is not a git command. See 'git --help'.`, 'err'), limit('Tape help pour la liste des commandes reconnues.')], code: 'unknown' };
   }
-  if (!repo) return notRepo();
+  if (!repo || repo.git === false) return notRepo();
   const via = ctx.via || 'terminal';
   switch (sub) {
     case 'status': return gitStatus(w, repo, rest);
@@ -256,7 +267,7 @@ function git(w, args, ctx) {
     case 'push': {
       const pos = rest.filter((a) => !a.startsWith('-'));
       if (pos[0] && pos[0] !== 'origin') return { out: [line(`fatal: '${pos[0]}' does not appear to be a git repository`, 'err'), line('fatal: Could not read from remote repository.', 'err')] };
-      if (pos[1] && pos[1] !== repo.branch && pos[1] !== 'HEAD') return { out: [line(`error: src refspec ${pos[1]} does not match any`, 'err'), line(`error: failed to push some refs to '${repo.remote.url}'`, 'err')] };
+      if (pos[1] && pos[1] !== repo.branch && pos[1] !== 'HEAD') return { out: [line(`error: src refspec ${pos[1]} does not match any`, 'err'), line(`error: failed to push some refs to '${repo.remote ? repo.remote.url : pos[0]}'`, 'err')] };
       if (rest.some((a) => a === '-f' || a === '--force')) return { out: [limit('Le push forcé réécrit l’historique partagé : il est hors du périmètre de ce parcours.')], code: 'unsupported' };
       const opts = { via, explicit: pos.length >= 2, setUpstream: rest.includes('-u') || rest.includes('--set-upstream') };
       return withAuth(w, E.push(w, repo.path, opts), (auth) => E.push(w, repo.path, { ...opts, auth }));
@@ -266,7 +277,17 @@ function git(w, args, ctx) {
       return withAuth(w, E.pull(w, repo.path, { via, fetchOnly }), (auth) => E.pull(w, repo.path, { via, fetchOnly, auth }));
     }
     case 'remote': {
+      if (rest[0] === 'add' || rest[0] === 'set-url') {
+        const [, name, url] = rest;
+        if (!name || !url) return { out: [line(`usage: git remote ${rest[0]} <name> <url>`, 'err')] };
+        if (name !== 'origin') return { out: [limit('Dans ce parcours, le dépôt distant s’appelle origin : git remote add origin <URL>.')], code: 'unsupported' };
+        const r = E.addRemote(w, repo.path, name, url, { via, setUrl: rest[0] === 'set-url' });
+        if (r.code === 'secret-in-url') return { out: [limit('Le simulateur refuse une adresse qui contient un jeton : il serait enregistré en clair dans .git/config. Utilise l’URL HTTPS seule ; Git demandera le jeton au push.')], code: r.code };
+        return finish(r, []);
+      }
+      if (rest[0] === 'remove' || rest[0] === 'rm' || rest[0] === 'rename') return { out: [limit('Supprimer ou renommer un remote est hors du périmètre de ce parcours. Pour changer l’adresse : git remote set-url origin <URL>.')], code: 'unsupported' };
       E.emit(w, 'remote-view', { via });
+      if (!repo.remote) return { out: [] };
       if (rest[0] === 'get-url') return { out: [line(repo.remote.url)] };
       if (rest.includes('-v') || rest.includes('--verbose')) return { out: [line(`origin\t${repo.remote.url} (fetch)`), line(`origin\t${repo.remote.url} (push)`)] };
       if (!rest.length) return { out: [line('origin')] };
@@ -384,7 +405,7 @@ function config(w, rest) {
   const scopePath = !global && repo ? repo.path : null;
   if (args[0] === '--list' || args[0] === '-l') {
     const merged = { ...w.gitconfig, ...((repo && repo.config) || {}) };
-    if (repo && !global) Object.assign(merged, { 'remote.origin.url': repo.remote.url, [`branch.${repo.branch}.remote`]: 'origin' });
+    if (repo && repo.git && repo.remote && !global) Object.assign(merged, { 'remote.origin.url': repo.remote.url, [`branch.${repo.branch}.remote`]: 'origin' });
     const out = Object.entries(global ? w.gitconfig : merged).map(([k, v]) => line(`${k}=${v}`));
     E.emit(w, 'config-view', {});
     return { out };

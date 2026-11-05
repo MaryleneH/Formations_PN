@@ -11,9 +11,10 @@ Le collègue s’exerce **à son rythme**, puis refait les gestes dans ses vrais
 
 | Séance | Contenu | Modalité |
 |---|---|---|
-| 1 (≈ 1 h) | Missions 1 à 3 : projet, accès, clonage | Parcours guidé, dans l’IDE qu’il utilise |
-| 2 (≈ 1 h) | Missions 4 et 5, puis exercices 6.1, 6.5 et 6.7 | Guidé, puis atelier de dépannage |
-| 3 (≈ 1 h) | Missions 1 à 5 en **autonome**, exercices restants, mission 7 | Entraînement autonome |
+| 1 (≈ 1 h) | Parcours A, missions A1 à A3 : projet, accès, clonage | Parcours guidé, dans l’IDE qu’il utilise |
+| 2 (≈ 1 h) | A4, A5, puis le parcours B (son cas réel : un travail déjà dans son pod) | Guidé |
+| 2 bis | Exercices 6.1, 6.5, 6.7 et 6.10 | Atelier de dépannage |
+| 3 (≈ 1 h) | Parcours A et B en **autonome**, exercices restants, mission 7 (A ou B) | Entraînement autonome |
 | 4 | Les mêmes gestes **dans ses vrais outils**, avec la [fiche de transfert](dans-mes-outils.qmd) | Accompagnement réel |
 
 Entre deux séances, il peut rejouer seul : la progression reste dans son navigateur.
@@ -22,13 +23,15 @@ Entre deux séances, il peut rejouer seul : la progression reste dans son naviga
 
 | Mission | Ce que l’on doit pouvoir observer |
 |---|---|
-| 1 | Un projet **privé** `etude-entreprises`, créé **vide** (case README décochée) ; il sait dire pourquoi, et que le dépôt n’existe que sur GitLab. |
-| 2 | L’URL HTTPS copiée ; un jeton **limité à `write_repository`**, avec expiration ; la valeur rangée avant de quitter la page. |
-| 3 | Un clonage authentifié par le jeton (pas de jeton dans l’URL) ; le projet ouvert ; `git remote -v` lu et compris. |
-| 4 | Le `README.md` créé dans l’IDE, son diff relu, le premier commit au message descriptif ; il constate que GitLab est toujours vide. |
-| 5 | Le premier push (**Publish Branch**, ou `git push -u origin main` dans RStudio), puis la vérification **dans GitLab** du commit et du contenu. |
-| 6 | Pour chaque panne : le message lu, **une hypothèse vérifiée** (liste des jetons, rôle, URL…), la bonne action. |
-| 7 | Le parcours complet, seul, sur un autre projet ; une explication de la démarche avec ses mots. |
+| A1 / B1 | Un projet **privé** ; case README **cochée** s’il démarre de zéro (A), **décochée** s’il a déjà du travail dans son pod (B). Il sait justifier ce choix. |
+| A2 / B2 | L’URL HTTPS copiée ; un jeton **limité à `write_repository`**, avec expiration ; la valeur rangée avant de quitter la page. |
+| A3 | Un clonage authentifié par le jeton (pas de jeton dans l’URL) ; le projet ouvert ; `git remote -v` lu et compris. |
+| B3 | Le dossier existant initialisé (`git init`) et relié au projet par `git remote add origin` ; il explique pourquoi on ne clone pas. |
+| A4 | Le README modifié, son diff relu, un commit au message descriptif ; GitLab inchangé. |
+| B4 | Les données écartées par `.gitignore`, le premier commit (rapport, script, `.gitignore`) au message descriptif ; GitLab toujours vide. |
+| A5 / B5 | Le push (en B : premier push avec `-u`), puis la vérification **dans GitLab** du commit et du contenu (en B : sans les données). |
+| 6 | Pour chaque panne : le message lu, **une hypothèse vérifiée**, la bonne action. L’exercice 6.10 relie directement au choix de la case README. |
+| 7 | Le parcours A ou B, seul, sur un autre projet ; une explication de la démarche avec ses mots. |
 
 ## Questions de débrief
 
@@ -49,8 +52,9 @@ Entre deux séances, il peut rejouer seul : la progression reste dans son naviga
 - **Identifiants mémorisés** : après un changement de jeton, l’ancien peut rester dans le gestionnaire d’identifiants. Montrer où il se trouve sur son système réel.
 - **Variations réelles** : la fenêtre d’authentification de son poste peut différer du simulateur. Prévoir ce moment pendant la séance 4.
 - **Identité Git** : à configurer dans **chaque** environnement (nouveau service Onyxia, nouveau poste).
-- **Case README** : GitLab la coche par défaut. Le parcours la fait décocher systématiquement ; vérifier que le geste est acquis dans ses vrais outils.
-- **Premier push** : sur un projet vide, la branche n’est pas encore suivie. VS Code propose **Publish Branch** ; RStudio grise **Push** et **Pull**, le premier envoi se fait au Terminal (`git push -u origin main`). Les exercices de dépannage partent de projets déjà publiés.
+- **Case README** : la règle dépend de la situation. Démarrer de zéro : case cochée, puis clonage. Travail déjà présent dans le pod : case décochée, puis `git init` et remote. Lui faire formuler la règle avec ses mots ; l’exercice 6.10 montre ce qui arrive en cas d’erreur.
+- **Premier push en B** : la branche n’est pas encore suivie. VS Code propose **Publish Branch** ; RStudio grise **Push** et **Pull**, le premier envoi se fait au Terminal (`git push -u origin main`).
+- **Données** : en B, insister sur `.gitignore` avant le premier commit ; une donnée commitée reste dans l’historique.
 
 ## Lire la progression
 

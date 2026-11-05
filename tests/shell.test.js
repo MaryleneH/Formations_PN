@@ -86,3 +86,43 @@ test('dépôt vide : git push demande --set-upstream, git push -u origin main cr
   assert.match(txt(r), /\* \[new branch\]      main -> main/);
   assert.match(txt(S.run(w, 'git status')), /up to date with 'origin\/main'/);
 });
+
+test('travail existant : git init, .gitignore, remote add, premier push', () => {
+  const w = E.blankWorld('t');
+  E.createProject(w, { name: 'etude-entreprises', readme: false });
+  const t = E.createToken(w, { name: 'a', scopes: ['write_repository'] }).token;
+  E.makeFolder(w, '/home/stagiaire/projets/etude-entreprises', { 'rapport.qmd': '# Rapport\n', 'analyse.R': 'x <- 1\n', 'entreprises.csv': 'id;naf\n1;6201Z\n' });
+  S.run(w, 'cd projets/etude-entreprises');
+  assert.equal(S.run(w, 'git status').code, 'not-repo');
+  assert.match(txt(S.run(w, 'git init -b main')), /Initialized empty Git repository in \/home\/stagiaire\/projets\/etude-entreprises\/\.git\//);
+  S.run(w, 'echo "entreprises.csv" > .gitignore');
+  assert.doesNotMatch(txt(S.run(w, 'git status')), /entreprises\.csv/);
+  assert.match(txt(S.run(w, 'git add entreprises.csv')), /ignored by one of your \.gitignore files/);
+  S.run(w, 'git add .');
+  S.run(w, 'git commit -m "Ajoute le rapport et le script d’analyse"');
+  assert.match(txt(S.run(w, 'git push')), /No configured push destination/);
+  S.run(w, 'git remote add origin https://gitlab.example.com/stagiaire/etude-entreprises.git');
+  assert.match(txt(S.run(w, 'git remote add origin https://gitlab.example.com/x/y.git')), /remote origin already exists/);
+  let r = S.run(w, 'git push -u origin main');
+  r = r.pending.next('stagiaire').pending.next(t.value);
+  assert.ok(r.ok, txt(r));
+  const p = E.getProject(w, 'stagiaire', 'etude-entreprises');
+  assert.deepEqual(Object.keys(p.commits[0].tree).sort(), ['.gitignore', 'analyse.R', 'rapport.qmd']);
+});
+
+test('historiques sans lien : projet créé avec README, push refusé, set-url vers un projet vide', () => {
+  const w = E.blankWorld('t');
+  E.createProject(w, { name: 'etude-entreprises', readme: true });
+  E.createProject(w, { name: 'etude-entreprises-2', readme: false });
+  const t = E.createToken(w, { name: 'a', scopes: ['write_repository'] }).token;
+  E.makeFolder(w, '/home/stagiaire/projets/etude-entreprises', { 'rapport.qmd': '# Rapport\n' });
+  S.run(w, 'cd projets/etude-entreprises');
+  S.run(w, 'git init -b main'); S.run(w, 'git add .'); S.run(w, 'git commit -m "Ajoute le rapport de l’étude"');
+  S.run(w, 'git remote add origin https://gitlab.example.com/stagiaire/etude-entreprises.git');
+  let r = S.run(w, 'git push -u origin main');
+  r = r.pending.next('stagiaire').pending.next(t.value);
+  assert.match(txt(r), /\[rejected\]/);
+  S.run(w, 'git remote set-url origin https://gitlab.example.com/stagiaire/etude-entreprises-2.git');
+  r = S.run(w, 'git push -u origin main');
+  assert.ok(r.ok, txt(r));
+});

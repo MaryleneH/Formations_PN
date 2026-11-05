@@ -27,11 +27,11 @@ La documentation de Posit n’était pas accessible depuis l’environnement de 
 - **Scopes** : `read_repository` (lecture, pull) ; `write_repository` (lecture et écriture, pull et push) ; `api` donne un accès complet à l’API (et, pour un jeton personnel, à Git sur HTTP).
 - **Git sur HTTPS** : n’importe quel nom d’utilisateur non vide, le jeton comme mot de passe.
 - **Messages de GitLab** relevés dans son code source : `HTTP Basic: Access denied. If a password was provided…`, `You are not allowed to upload code.`, `You are not allowed to push code to this project.`, `You are not allowed to push code to protected branches on this project.`, `The project you were looking for could not be found or you don't have permission to view it.`
-- **Création de projet** : *Create new (+)* › *New project/repository* › *Create blank project* ; *Project name*, *Project slug*, *Visibility Level*, *Initialize repository with a README* (cochée par défaut, **décochée dans ce parcours**), *Create project*. Un projet vide affiche *The repository for this project is empty* et des *Command line instructions*, dont `git push --set-upstream origin main`.
+- **Création de projet** : *Create new (+)* › *New project/repository* › *Create blank project* ; *Project name*, *Project slug*, *Visibility Level*, *Initialize repository with a README* (cochée par défaut ; cochée dans le parcours A, décochée dans le parcours B), *Create project*. Un projet vide affiche *The repository for this project is empty* et des *Command line instructions*, dont `git push --set-upstream origin main`.
 - **Clonage** : bouton *Code*, *Clone with SSH* / *Clone with HTTPS*. La documentation de GitLab montre aussi la forme `https://<utilisateur>:<jeton>@…` ; le parcours ne l’enseigne pas, car elle laisse le jeton en clair dans `.git/config`.
 - **VS Code** : *Git: Clone* ou *Clone Repository* ; choix du dossier ; proposition d’ouvrir le dépôt cloné ; *Changes* / *Staged Changes* ; *Commit* ; *Sync Changes* (pull puis push) ; *More Actions* › *Push* ; indicateur ↑/↓ dans la barre d’état.
 - **Git** : `Username for 'https://…': ` puis `Password for 'https://…@…': ` ; gestionnaires `cache`, `store` et ceux des systèmes. Cloner un dépôt vide affiche `warning: You appear to have cloned an empty repository.` ; le simulateur suppose que la branche initiale s’appelle `main` (réglage `init.defaultBranch` des versions récentes de Git) et qu’elle n’a pas encore de branche suivie.
-- **Premier envoi** : VS Code propose *Publish Branch* pour une branche sans amont ; RStudio grise *Push* et *Pull* tant que la branche n’est pas suivie (comportement de l’interface habituelle de RStudio, à confirmer sur votre version).
+- **Travail existant** : VS Code propose *Initialize Repository* pour un dossier sans dépôt, *Remote › Add Remote…* et *Publish Branch* pour une branche sans amont ; RStudio propose *Tools › Version Control › Project Setup…* et grise *Push* et *Pull* tant que la branche n’est pas suivie (libellés de l’interface habituelle de RStudio, à confirmer sur votre version). Le simulateur reconnaît un sous-ensemble de `.gitignore` : noms exacts et motifs avec `*`.
 
 ### Références
 
@@ -58,7 +58,7 @@ La documentation de Posit n’était pas accessible depuis l’environnement de 
 
 ## Commandes reconnues par le terminal simulé
 
-`pwd`, `ls [-a]`, `cd`, `cat`, `echo "…" >> fichier`, `mkdir`, `touch`, `clear`, `help`, `git clone`, `git status [-s]`, `git diff [--staged]`, `git add`, `git restore [--staged]`, `git reset <fichier>`, `git commit -m "…" [-a] [--amend]`, `git push [origin main]`, `git pull`, `git fetch`, `git remote [-v]`, `git log [--oneline] [-n N]`, `git branch`, `git config [--global] [--list | --get | --unset]`.
+`pwd`, `ls [-a]`, `cd`, `cat`, `echo "…" >> fichier`, `mkdir`, `touch`, `clear`, `help`, `git clone`, `git status [-s]`, `git diff [--staged]`, `git add`, `git restore [--staged]`, `git reset <fichier>`, `git commit -m "…" [-a] [--amend]`, `git push [origin main]`, `git pull`, `git fetch`, `git remote [-v]`, `git log [--oneline] [-n N]`, `git branch`, `git init [-b main]`, `git remote add|set-url origin <url>`, `git config [--global] [--list | --get | --unset]`.
 
 Toute autre commande reçoit une explication sur la limite du simulateur.
 

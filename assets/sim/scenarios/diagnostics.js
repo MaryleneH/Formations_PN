@@ -327,4 +327,54 @@ export const d9 = {
   debrief: { summary: 'Être reconnu (authentification) ne suffit pas : il faut aussi le droit d’effectuer l’opération (autorisation). Ce droit dépend de ton rôle et des règles du projet, pas du jeton.', questions: [{ q: 'Un jeton peut-il donner plus de droits que ton compte ?', a: 'Non. Il ne peut que les restreindre.' }] },
 };
 
-export const DIAGNOSTICS = [d1, d2, d3, d4, d5, d6, d7, d8, d9];
+const FOLDER = '/home/stagiaire/projets/etude-entreprises';
+const pushedNew = (c) => {
+  const f = c.w.ws.repos[FOLDER];
+  if (!f || !f.remote || !f.commits.length) return false;
+  const u = E.parseRepoUrl(f.remote.url);
+  const p = E.getProject(c.w, u.ns, u.path);
+  return !!(p && p.commits.length && p.commits[p.commits.length - 1].id === f.commits[f.commits.length - 1].id);
+};
+
+export const d10 = {
+  id: 'd10', group: 'm6', num: '6.10', world: 'd10', mode: 'depannage', title: 'Un README de trop', short: 'Historiques sans lien',
+  params: M, worldOptions: { host: 'vscode-onyxia-4b2e' },
+  situation: 'Ton étude existait déjà dans ton pod. Tu as créé le projet GitLab `etude-entreprises` en laissant la case README cochée, puis initialisé ton dossier, ajouté le remote et créé ton premier commit. Le premier push échoue.',
+  objective: 'Comprendre pourquoi le push est refusé, puis envoyer ton travail vers un projet vide.',
+  setup(w, { ide }) {
+    H.makeProject(w, M, { readme: true });
+    H.makeSavedToken(w);
+    const f = E.makeFolder(w, FOLDER, { 'rapport.qmd': '---\ntitle: "Démographie des entreprises"\n---\n\nÉtude fictive.\n', 'analyse.R': 'table(donnees$naf)\n' }, { rstudio: ide === 'rstudio' });
+    w.ws.opened.vscode = FOLDER; w.ws.opened.rstudio = FOLDER; w.ws.cwd = FOLDER;
+    E.initRepo(w, FOLDER);
+    E.addRemote(w, FOLDER, 'origin', E.httpsUrl('stagiaire', 'etude-entreprises'));
+    E.stageAll(w, FOLDER);
+    E.commit(w, FOLDER, { message: 'Ajoute le rapport et le script d’analyse' });
+  },
+  steps: [
+    { id: 'observe', title: 'Reproduire le problème', tool: 'ide', guide: { vscode: 'Lance le premier push (**Publish Branch**) et lis le message.', rstudio: 'Dans l’onglet **Terminal**, tape `git push -u origin main` et lis le message.' },
+      done: (c) => c.has('push-fail', (e) => e.reason === 'non-fast-forward'),
+      result: 'Git refuse : `! [rejected] main -> main (fetch first)`.',
+      software: " ! [rejected]        main -> main (fetch first)\nerror: failed to push some refs to 'https://gitlab.example.com/stagiaire/etude-entreprises.git'\nhint: Updates were rejected because the remote contains work that you do not\nhint: have locally.",
+      explain: 'L’authentification a réussi. Git refuse parce que la branche `main` de GitLab contient un commit que ton dépôt n’a pas.',
+      hints: ['Reproduis l’erreur.', { vscode: 'Publish Branch dans Source Control.', rstudio: 'Terminal : git push -u origin main.' }, { text: 'Lance le push.', targets: { vscode: ['vs.scm', 'vs.publish', 'vs.status-sync'], rstudio: ['rs.tab-terminal', 'rs.terminal-input'] } }] },
+    { id: 'verify', title: 'Regarder ce que contient GitLab', tool: 'gitlab', guide: 'Ouvre la page du projet et son historique (**Code** › **Commits**).',
+      done: (c) => { const f = c.ev('push-fail').pop(); return !!f && c.has('view', (e) => (e.page === 'commits' || e.page === 'project') && e.n > f.n); },
+      result: 'GitLab contient un commit **Initial commit** avec un `README.md`, que ton dépôt local n’a jamais eu.',
+      hints: ['Que contient déjà le dépôt distant ?', 'Code › Commits du projet.', { text: 'Ouvre l’historique du projet.', targets: ['tb.tool-gitlab', 'gl.project-link', 'gl.nav-commits'] }] },
+    { id: 'cause', kind: 'quiz', tool: 'any', title: 'Identifier la cause', question: 'Pourquoi le push est-il refusé ?', options: [
+      { id: 'a', text: 'Le projet a été créé avec un README : GitLab a un historique sans lien avec le mien, et Git refuse d’écraser ce commit.', correct: true, feedback: 'Exact. Deux historiques indépendants : Git ne les mélange pas tout seul.' },
+      { id: 'b', text: 'Mon jeton n’a pas le droit d’écrire.', feedback: 'Ce serait « You are not allowed to upload code » (403). Ici GitLab t’a reconnu et autorisé.' },
+      { id: 'c', text: 'Il faut forcer le push (`git push --force`).', feedback: 'Cela effacerait le commit de GitLab. Sur un vrai projet partagé, c’est dangereux, et souvent interdit sur `main`.' },
+    ] },
+    { id: 'fix', title: 'Envoyer vers un projet vide', tool: 'any', guide: 'Crée sur GitLab un projet **vide** (case README décochée), par exemple `etude-entreprises-v2`. Puis change l’adresse du remote : `git remote set-url origin <URL HTTPS du nouveau projet>`, et refais `git push -u origin main`.',
+      done: pushedNew,
+      result: 'Le push réussit vers le projet vide : ton historique y est seul.',
+      explain: 'Autre solution, hors de ce parcours : récupérer le README avec `git pull origin main --allow-unrelated-histories`, puis pousser. Le plus simple reste de ne pas cocher la case quand le travail existe déjà.',
+      concepts: ['remote'],
+      hints: ['Il faut un dépôt distant sans historique, et dire à Git sa nouvelle adresse.', 'GitLab : Create blank project (case décochée). Puis Terminal : git remote set-url origin <URL>.', { text: 'Crée le projet vide, copie son URL HTTPS, puis `git remote set-url origin <URL>` et `git push -u origin main`.', targets: ['tb.tool-gitlab', 'gl.create-new', 'gl.code-button'] }] },
+  ],
+  debrief: { summary: 'Un README créé par GitLab est un commit. Pour envoyer un travail **existant**, le projet doit être **vide** ; pour **démarrer de zéro**, le README est utile et on clone.', questions: [{ q: 'Comment éviter cette situation ?', a: 'Choisir le bon parcours à la création : case décochée si le travail existe déjà dans le pod.' }] },
+};
+
+export const DIAGNOSTICS = [d1, d2, d3, d4, d5, d6, d7, d8, d9, d10];

@@ -17,6 +17,33 @@ toc: false
 ::: {#gbs-resume .gbs-resume aria-live="polite"}
 :::
 
+## Deux situations, deux bonnes pratiques
+
+```{=html}
+<ul class="gbs-cards">
+  <li class="gbs-card">
+    <span class="gbs-num" aria-hidden="true">A</span>
+    <h3>Je démarre de zéro</h3>
+    <p>Rien n’existe encore. Je crée le projet GitLab <strong>avec un README</strong>, puis je le clone tout de suite dans mon pod : mon environnement est relié à GitLab dès le début.</p>
+    <a class="gbs-card-go" href="bac-a-sable.html?mission=m1">Parcours A →</a>
+  </li>
+  <li class="gbs-card">
+    <span class="gbs-num" aria-hidden="true">B</span>
+    <h3>J’ai déjà du travail dans mon pod</h3>
+    <p>Mon étude existe dans mon pod Onyxia. Je crée le projet GitLab <strong>sans README</strong> (vide), j’initialise mon dossier, je le relie à GitLab et j’y envoie mon travail.</p>
+    <a class="gbs-card-go" href="bac-a-sable.html?mission=m1b">Parcours B →</a>
+  </li>
+</ul>
+```
+
+| | A · Je démarre de zéro | B · J’ai déjà du travail |
+|---|---|---|
+| Case *Initialize repository with a README* | **cochée** | **décochée** : projet vide |
+| Le dépôt naît… | sur GitLab, avec un premier commit | dans le pod, avec `git init` |
+| Relier le pod à GitLab | `git clone <URL>` | `git remote add origin <URL>` |
+| Premier envoi | `git push` (branche déjà suivie) | `git push -u origin main` |
+| Si on se trompe | un dossier vide à côté de son travail | push refusé : deux historiques sans lien (exercice 6.10) |
+
 ## Trois façons de s’exercer
 
 Le même simulateur sert aux trois. Tu peux passer de l’une à l’autre à tout moment ; ta progression est conservée dans ce navigateur.
@@ -27,7 +54,7 @@ Le même simulateur sert aux trois. Tu peux passer de l’une à l’autre à to
     <span class="gbs-num" aria-hidden="true">1</span>
     <h3>Parcours guidé</h3>
     <p>Une consigne à la fois. Chaque geste est expliqué au moment où il devient utile.</p>
-    <a class="gbs-card-go" href="bac-a-sable.html?mission=m1&amp;mode=guide">Commencer la mission 1 →</a>
+    <a class="gbs-card-go" href="bac-a-sable.html?mission=m1&amp;mode=guide">Commencer (parcours A) →</a>
   </li>
   <li class="gbs-card">
     <span class="gbs-num" aria-hidden="true">2</span>
@@ -38,7 +65,7 @@ Le même simulateur sert aux trois. Tu peux passer de l’une à l’autre à to
   <li class="gbs-card">
     <span class="gbs-num" aria-hidden="true">3</span>
     <h3>Atelier de dépannage</h3>
-    <p>Neuf situations problématiques : observer, vérifier une hypothèse, identifier la cause, agir.</p>
+    <p>Dix situations problématiques : observer, vérifier une hypothèse, identifier la cause, agir.</p>
     <a class="gbs-card-go" href="bac-a-sable.html?mission=d1">Ouvrir l’atelier →</a>
   </li>
 </ul>
@@ -51,7 +78,7 @@ Le même simulateur sert aux trois. Tu peux passer de l’une à l’autre à to
 ```{mermaid}
 %%| fig-cap: "Le trajet d’une modification. Le simulateur affiche ces quatre zones en permanence."
 flowchart LR
-  G[("GitLab<br/>dépôt distant")] -- "1 · git clone<br/>(URL + jeton)" --> F["Fichiers de travail"]
+  G[("GitLab<br/>dépôt distant")] -- "A · git clone<br/>B · git init + remote" --> F["Fichiers de travail"]
   F -- "2 · git add" --> P["Préparation"]
   P -- "3 · git commit" --> L[("Historique local")]
   L -- "4 · git push<br/>(jeton)" --> G
@@ -63,13 +90,10 @@ Le **dépôt local** se trouve là où Git travaille : ton ordinateur, ou un esp
 
 ```{=html}
 <ol class="gbs-missions" id="gbs-missions">
-  <li data-m="m1"><span class="gbs-m-num">1</span><a href="bac-a-sable.html?mission=m1">Créer mon dépôt distant</a><span class="gbs-m-status">À faire</span></li>
-  <li data-m="m2"><span class="gbs-m-num">2</span><a href="bac-a-sable.html?mission=m2">Préparer mon accès : URL et jeton personnel</a><span class="gbs-m-status">À faire</span></li>
-  <li data-m="m3"><span class="gbs-m-num">3</span><a href="bac-a-sable.html?mission=m3">Cloner dans mon environnement (VS Code ou RStudio)</a><span class="gbs-m-status">À faire</span></li>
-  <li data-m="m4"><span class="gbs-m-num">4</span><a href="bac-a-sable.html?mission=m4">Enregistrer une modification (commit)</a><span class="gbs-m-status">À faire</span></li>
-  <li data-m="m5"><span class="gbs-m-num">5</span><a href="bac-a-sable.html?mission=m5">Envoyer et vérifier (push)</a><span class="gbs-m-status">À faire</span></li>
-  <li data-m="m6"><span class="gbs-m-num">6</span><a href="bac-a-sable.html?mission=d1">Comprendre une erreur — 9 exercices</a><span class="gbs-m-status">À faire</span></li>
-  <li data-m="m7"><span class="gbs-m-num">7</span><a href="bac-a-sable.html?mission=m7">Refaire seul, sur un nouveau projet</a><span class="gbs-m-status">À faire</span></li>
+  <li data-m="m1"><span class="gbs-m-num">A</span><a href="bac-a-sable.html?mission=m1">Parcours A · Je démarre de zéro (5 missions)</a><span class="gbs-m-status">À faire</span></li>
+  <li data-m="m1b"><span class="gbs-m-num">B</span><a href="bac-a-sable.html?mission=m1b">Parcours B · J’ai déjà du travail dans mon pod (5 missions)</a><span class="gbs-m-status">À faire</span></li>
+  <li data-m="m6"><span class="gbs-m-num">6</span><a href="bac-a-sable.html?mission=d1">Comprendre une erreur — 10 exercices</a><span class="gbs-m-status">À faire</span></li>
+  <li data-m="m7"><span class="gbs-m-num">7</span><a href="bac-a-sable.html?mission=m7">Refaire seul, en situation A ou B</a><span class="gbs-m-status">À faire</span></li>
 </ol>
 ```
 

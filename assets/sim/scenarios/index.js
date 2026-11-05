@@ -1,16 +1,18 @@
 // Catalogue des missions. Pour ajouter une mission : écrire son objet
 // (voir missions.js ou diagnostics.js) et l'ajouter à CATALOG.
 import { MAIN, m7 } from './missions.js';
+import { MAIN_B, m7b } from './missions-b.js';
 import { DIAGNOSTICS } from './diagnostics.js';
 
-export const CATALOG = [...MAIN, ...DIAGNOSTICS, m7];
+export const CATALOG = [...MAIN, ...MAIN_B, ...DIAGNOSTICS, m7, m7b];
 export const byId = (id) => CATALOG.find((m) => m.id === id) || null;
 
 /** Groupes affichés dans le menu des missions. */
 export const GROUPS = [
-  { id: 'parcours', title: 'Parcours', items: MAIN.map((m) => m.id) },
+  { id: 'A', title: 'Parcours A · Je démarre de zéro', items: MAIN.map((m) => m.id) },
+  { id: 'B', title: 'Parcours B · J’ai déjà du travail dans mon pod', items: MAIN_B.map((m) => m.id) },
   { id: 'm6', title: '6 · Comprendre une erreur', items: DIAGNOSTICS.map((m) => m.id) },
-  { id: 'autonome', title: '7 · Refaire seul', items: [m7.id] },
+  { id: 'autonome', title: '7 · Refaire seul', items: [m7.id, m7b.id] },
 ];
 
 export const MODES = {

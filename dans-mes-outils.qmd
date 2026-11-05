@@ -19,15 +19,21 @@ Ton nom d’utilisateur et tes jetons réels se saisissent **dans GitLab, dans V
 - J’ai un compte sur l’instance GitLab de mon équipe et je sais l’ouvrir dans mon navigateur.
 - Je sais **où Git travaille** : sur mon poste, ou dans un espace distant (Coder, Onyxia…). C’est là que sera mon dépôt local.
 - Git y est installé : `git --version` affiche une version dans le terminal.
+- Je sais si je **démarre de zéro** (A) ou si mon **travail existe déjà** dans mon pod (B).
 - Mon identité est configurée **dans cet environnement** : `git config --global user.name` et `git config --global user.email` affichent mon nom et mon adresse.
 - J’ai un gestionnaire de mots de passe pour ranger un jeton.
 :::
 
-## 1. Créer le projet (si nécessaire)
+## 1. Choisir ma situation, puis créer le projet
 
-Dans GitLab : **Create new (+)** › **New project/repository** › **Create blank project**. Renseigne le nom, vérifie l’espace de noms et le chemin (**Project slug**), choisis **Private**, puis **décoche** **Initialize repository with a README** (elle est cochée par défaut) avant **Create project**.
+| Ma situation | Case *Initialize repository with a README* | Ensuite |
+|---|---|---|
+| **A · Je démarre de zéro** | **cochée** | je clone le projet dans mon pod (étape 5 A) |
+| **B · Mon travail existe déjà dans mon pod** | **décochée** : le projet reste vide | j’initialise mon dossier et je le relie (étape 5 B) |
 
-Le projet est **vide** : tout son historique partira de ton environnement, à commencer par le README. Aucun historique distant n’est à réconcilier, en particulier quand tu envoies un projet qui existe déjà.
+Dans GitLab : **Create new (+)** › **New project/repository** › **Create blank project**. Renseigne le nom, vérifie l’espace de noms et le chemin (**Project slug**), choisis **Private**, règle la case README selon ta situation, puis **Create project**.
+
+Pourquoi cette règle ? Un README créé par GitLab est un commit. En A, il donne un dépôt prêt à cloner. En B, il formerait un second historique, sans lien avec ton travail : ton premier push serait refusé (`[rejected] … (fetch first)`).
 
 ## 2. Retrouver l’URL du dépôt
 
@@ -88,7 +94,9 @@ git config --get credential.helper
 Une adresse comme `https://utilisateur:jeton@…` fonctionne techniquement, mais elle enregistre le jeton **en clair** dans `.git/config`, d’où il peut réapparaître (captures d’écran, sauvegardes, journaux). Utilise l’URL HTTPS seule : Git demandera le jeton.
 :::
 
-## 5. Cloner
+## 5. Relier mon environnement à GitLab
+
+### A · Je démarre de zéro : cloner
 
 ::: {.panel-tabset}
 ## VS Code
@@ -99,24 +107,38 @@ Une adresse comme `https://utilisateur:jeton@…` fonctionne techniquement, mais
 
 ## Terminal
 ```bash
-cd ~/projets
+cd ~/work
 git clone https://<adresse-de-ton-gitlab>/<espace>/<projet>.git
 ```
 :::
 
-Le projet étant vide, Git affiche `warning: You appear to have cloned an empty repository.` : c’est attendu.
+**Je reconnais un clonage réussi :** le dossier contient le README ; `git remote -v` affiche `origin` ; `git status` indique *Your branch is up to date with 'origin/main'*.
 
-**Je reconnais un clonage réussi :**
+### B · Mon travail existe déjà : initialiser et relier
 
+Dans le dossier de ton étude :
+
+::: {.panel-tabset}
+## VS Code
+**Source Control** › **Initialize Repository**. Puis **…** › **Remote** › **Add Remote…** (ou la commande **Git: Add Remote…**) : colle l’URL HTTPS, nomme le remote `origin`.
+
+## RStudio
+**Tools** › **Version Control** › **Project Setup…** › système **Git** › **OK** › **Yes** (RStudio redémarre la session). Puis, dans l’onglet **Terminal** : `git remote add origin <URL>`.
+
+## Terminal
 ```bash
-cd <projet>
-git remote -v      # origin  https://…/<projet>.git (fetch) / (push)
-git status         # On branch main — No commits yet
+cd ~/work/<mon-etude>
+git init -b main
+git remote add origin https://<adresse-de-ton-gitlab>/<espace>/<projet>.git
+git remote -v
 ```
+:::
+
+**Avant le premier commit, écarte les données** : ajoute-les à un fichier `.gitignore` à la racine (par exemple `*.csv` ou `donnees/`). Elles restent dans ton pod (ou dans le stockage S3 d’Onyxia) et n’entrent jamais dans l’historique.
 
 ## 6. Modifier, préparer, commiter
 
-1. Je crée (ou modifie) un fichier, par exemple `README.md` avec un titre et une phrase, et **je l’enregistre**.
+1. Je modifie ou crée un fichier et **je l’enregistre** (en B : tout le travail existant, sauf les données ignorées).
 2. Je relis le **diff** (VS Code : clic sur le fichier dans *Changes* ; RStudio : **Diff** ; terminal : `git diff`).
 3. Je **prépare** le changement (VS Code : **+** ; RStudio : case **Staged** ; terminal : `git add <fichier>`).
 4. Je crée le **commit** avec un message qui dit ce que le changement apporte.
@@ -125,13 +147,15 @@ git status         # On branch main — No commits yet
 
 ## 7. Envoyer et vérifier
 
-**Le premier envoi** crée la branche `main` sur GitLab et l’enregistre comme branche suivie :
+**A · après un clonage**, la branche `main` est déjà suivie : le push se fait directement (voir ci-dessous).
+
+**B · premier envoi d’un travail existant** : il crée la branche `main` sur GitLab et l’enregistre comme branche suivie :
 
 - VS Code : **Publish Branch** ;
 - RStudio : les boutons **Push** et **Pull** restent grisés tant que la branche n’est pas suivie. Dans l’onglet **Terminal** : `git push -u origin main` ;
 - terminal : `git push -u origin main` (un simple `git push` répond `has no upstream branch`).
 
-**Les envois suivants** :
+**Ensuite, dans les deux cas** :
 
 - VS Code : **Sync Changes** (récupère puis envoie) ou **…** › **Push** ;
 - RStudio : **Push** dans l’onglet Git ;
@@ -152,6 +176,8 @@ Un même message peut avoir plusieurs causes : vérifie les hypothèses dans l�
 | `Permission denied (publickey)` | URL **SSH** sans clé configurée. → Reprendre l’URL HTTPS. |
 | `repository '…' not found` | URL erronée, ou pas d’accès au projet. → Recopier l’URL depuis **Code** ; vérifier ton accès. |
 | `The current branch main has no upstream branch.` | premier envoi d’une branche : Git ne sait pas encore où l’envoyer. → `git push -u origin main` (ou **Publish Branch**). |
+| `! [rejected] main -> main (fetch first)` au premier push d’un travail existant | le projet GitLab a été créé **avec** un README : deux historiques sans lien. → Envoyer vers un projet vide (`git remote set-url origin <URL>`), ou récupérer le README avec `git pull origin main --allow-unrelated-histories`. |
+| `fatal: No configured push destination.` | aucun remote : `git remote add origin <URL>`. |
 | `Author identity unknown` | `user.name` / `user.email` absents de cet environnement. → `git config --global …` |
 | GitLab ne montre pas ma modification | commit non envoyé, ou modification non commitée. → `git status`. |
 

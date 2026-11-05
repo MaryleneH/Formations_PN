@@ -74,7 +74,7 @@ export const project = (ctx) => E.getProject(ctx.w, ctx.m.ns || 'stagiaire', ctx
 /** Le dépôt local qui pointe vers le projet de la mission (le plus récent). */
 export function repo(ctx) {
   const url = E.httpsUrl(ctx.m.ns || 'stagiaire', ctx.m.project);
-  const list = Object.values(ctx.w.ws.repos).filter((r) => r.remote.url === url);
+  const list = Object.values(ctx.w.ws.repos).filter((r) => r.remote && r.remote.url === url);
   return list.length ? list[list.length - 1] : null;
 }
 
