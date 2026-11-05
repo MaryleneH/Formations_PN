@@ -8,6 +8,7 @@ import * as P from '../core/progress.js';
 import { MODES } from '../scenarios/index.js';
 import { GLOSSARY } from '../scenarios/glossary.js';
 import { h, btn, icon, md, mdEl, append } from './dom.js';
+import { frDate } from '../engine/util.js';
 
 const TOOL_LABEL = { gitlab: 'Dans GitLab', ide: null, any: 'GitLab ou ton IDE' };
 const pick = P.pick;
@@ -41,7 +42,7 @@ export function renderCoach(app) {
 
   if (m.situation) {
     parts.push(h('section', { class: 'coach-situation', 'aria-label': 'Situation' }, h('h3', { class: 'coach-label' }, icon('alert'), 'Situation'), mdEl('p', m.situation),
-      m.clockHint ? h('p', { class: 'coach-small' }, 'Date du scénario : ', h('strong', {}, app.w.today), '. L’horloge de la barre d’outils permet de la faire avancer.') : null));
+      m.clockHint ? h('p', { class: 'coach-small' }, 'Date du scénario : ', h('strong', {}, frDate(app.w.today)), '. L’horloge de la barre d’outils permet de la faire avancer.') : null));
   }
 
   if (ev.complete) parts.push(renderDebrief(app));
