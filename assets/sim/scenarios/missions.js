@@ -21,7 +21,7 @@ const quiz = (id, title, question, options, extra = {}) => ({ id, kind: 'quiz', 
 export const m1 = {
   id: 'm1', num: 1, world: 'parcours', title: 'Créer mon dépôt distant', short: 'Projet GitLab',
   params: M,
-  objective: 'Créer sur GitLab un projet **privé** `etude-entreprises`, initialisé avec un README.',
+  objective: 'Créer sur GitLab un projet **privé** `etude-entreprises`, **vide** : la case README reste décochée.',
   why: 'Le dépôt distant est le point de rendez-vous de ton projet : c’est lui que tu cloneras, puis que tu mettras à jour.',
   setup() {},
   steps: [
@@ -40,7 +40,7 @@ export const m1 = {
     },
     {
       id: 'create', title: 'Renseigner le projet et le créer', tool: 'gitlab',
-      guide: 'Nom : `etude-entreprises`. Vérifie l’espace de noms (`stagiaire`) et le chemin (**Project slug**). Choisis **Private**, garde **Initialize repository with a README** coché, puis **Create project**.',
+      guide: 'Nom : `etude-entreprises`. Vérifie l’espace de noms (`stagiaire`) et le chemin (**Project slug**). Choisis **Private**, **décoche** **Initialize repository with a README** (elle est cochée par défaut), puis **Create project**.',
       done: (c) => !!H.project(c),
       warn: (c) => {
         const p = H.project(c);
@@ -48,33 +48,33 @@ export const m1 = {
         if (!p && other.length) return `Un projet « ${other[0].path} » existe, mais la mission attend le chemin \`etude-entreprises\`. Tu peux créer un second projet avec ce chemin.`;
         return null;
       },
-      result: 'GitLab affiche la page du projet `stagiaire/etude-entreprises` avec un fichier README.md.',
+      result: 'GitLab affiche la page du projet `stagiaire/etude-entreprises` : « The repository for this project is empty ».',
       explain: 'Le **chemin** (slug) devient l’adresse du projet : `https://gitlab.example.com/stagiaire/etude-entreprises`. L’**espace de noms** `stagiaire` est ton espace personnel.',
       concepts: ['gitlab', 'url'],
       hints: [
-        'Quatre réglages comptent ici : le nom, le chemin, la visibilité et le README.',
+        'Quatre réglages comptent ici : le nom, le chemin, la visibilité et la case README, cochée par défaut.',
         'Dans le formulaire : **Project name**, puis **Project URL** / **Project slug**, puis **Visibility Level**, puis **Project Configuration**.',
-        { text: 'Saisis le nom, sélectionne **Private**, laisse le README coché, puis clique sur **Create project**.', targets: ['gl.field-name', 'gl.visibility-private', 'gl.readme', 'gl.create-project'] },
+        { text: 'Saisis le nom, sélectionne **Private**, **décoche** **Initialize repository with a README**, puis clique sur **Create project**.', targets: ['gl.field-name', 'gl.visibility-private', 'gl.readme', 'gl.create-project'] },
       ],
     },
     {
-      id: 'check', title: 'Vérifier : privé, README, premier commit', tool: 'gitlab',
-      guide: 'Sur la page du projet, repère le README, la branche `main` et le premier commit (**Initial commit**).',
-      done: (c) => { const p = H.project(c); return !!(p && p.visibility === 'private' && p.commits.length >= 1 && c.has('view', (e) => e.page === 'project' && e.project === 'stagiaire/etude-entreprises')); },
+      id: 'check', title: 'Vérifier : privé et vide', tool: 'gitlab',
+      guide: 'Sur la page du projet, repère le badge **Private** et le message « The repository for this project is empty ». Lis les instructions proposées par GitLab.',
+      done: (c) => { const p = H.project(c); return !!(p && p.visibility === 'private' && H.createdEmpty(c) && c.has('view', (e) => e.page === 'project' && e.project === 'stagiaire/etude-entreprises')); },
       warn: (c) => {
         const p = H.project(c);
         if (!p) return null;
-        if (!p.commits.length) return 'Ce projet a été créé sans README : son dépôt est vide. Recommence la mission (bouton en haut) pour le recréer avec un README.';
+        if (!H.createdEmpty(c) && p.commits.length) return 'Ce projet a été créé avec un README. Dans ce parcours, on laisse la case décochée : recommence la mission (bouton en haut) pour le recréer vide.';
         if (p.visibility !== 'private') return `Ce projet est « ${p.visibility} ». La mission demande un projet privé : recommence la mission pour le recréer.`;
         return null;
       },
-      result: 'Le dépôt distant existe : un fichier, une branche `main`, un commit.',
-      explain: 'Le README a été enregistré par un premier **commit**, sur le serveur. **Privé** : seuls les membres du projet peuvent le voir et le cloner.',
+      result: 'Le dépôt distant existe, sans aucun fichier ni commit. GitLab affiche son adresse et des instructions pour y envoyer un premier commit.',
+      explain: 'Un dépôt **vide** ne contient aucun historique : le premier commit, et le README, viendront de ton environnement. On évite ainsi d’avoir deux historiques à réconcilier, par exemple quand on envoie un projet qui existe déjà. **Privé** : seuls les membres du projet peuvent le voir et le cloner.',
       concepts: ['commit', 'branche'],
       hints: [
         'La page d’accueil du projet résume son contenu.',
-        'Regarde la liste des fichiers, le sélecteur de branche au-dessus, et le dernier commit affiché.',
-        { text: 'Ouvre la page du projet depuis **Projects** si tu l’as quittée.', targets: ['gl.project-link', 'gl.last-commit'] },
+        'Regarde le badge de visibilité à côté du nom, puis le message sous l’en-tête.',
+        { text: 'Ouvre la page du projet depuis **Projects** si tu l’as quittée.', targets: ['gl.project-link'] },
       ],
     },
     quiz('where', 'Où se trouve ce dépôt ?', 'À ce stade, où se trouve le dépôt `etude-entreprises` ?', [
@@ -84,10 +84,10 @@ export const m1 = {
     ]),
   ],
   debrief: {
-    summary: 'Tu as créé un **dépôt distant** privé, avec un README enregistré par un premier commit. Il n’existe que sur GitLab.',
+    summary: 'Tu as créé un **dépôt distant** privé et **vide**. Il n’existe que sur GitLab, sans aucun commit.',
     questions: [
       { q: 'Quel réglage empêche une personne extérieure au projet de le consulter ?', a: 'La visibilité **Private** : seuls les membres du projet y ont accès.' },
-      { q: 'Pourquoi l’option README est-elle utile ici ?', a: 'Elle crée un premier commit et la branche `main` : le dépôt n’est pas vide et peut être cloné tel quel.' },
+      { q: 'Pourquoi laisser la case README décochée ?', a: 'Le dépôt reste vide : tout l’historique partira de ton environnement, à commencer par le README. Aucun historique distant n’est à réconcilier, ce qui compte surtout quand on envoie un projet existant.' },
     ],
   },
 };
@@ -233,7 +233,7 @@ export const m3 = {
         if (!f || c.has('clone-ok')) return null;
         return 'GitLab a refusé l’authentification. Vérifie la valeur collée : elle doit être celle du jeton actif rangé dans ton gestionnaire de mots de passe. Le nom d’utilisateur, lui, n’est pas vérifié par GitLab pour un jeton.';
       },
-      result: 'Le clonage réussit : un dossier `etude-entreprises` apparaît dans `projets`.',
+      result: 'Le clonage réussit avec l’avertissement `You appear to have cloned an empty repository.` : c’est normal, le projet est vide. Un dossier `etude-entreprises` apparaît dans `projets`.',
       explain: 'Le **jeton** sert de mot de passe pour Git sur HTTPS. Selon ton système, la demande prend une autre forme (fenêtre de VS Code, de RStudio, du gestionnaire d’identifiants de Windows ou macOS). Ici, le gestionnaire d’identifiants de Git mémorise ensuite ces informations.',
       concepts: ['authentification', 'gestionnaire'],
       hints: [
@@ -246,7 +246,7 @@ export const m3 = {
       id: 'open', title: 'Ouvrir le projet cloné', tool: 'ide',
       guide: { vscode: 'Accepte d’ouvrir le dépôt cloné (**Open**), ou utilise **File** › **Open Folder…**.', rstudio: 'RStudio ouvre le projet automatiquement après le clonage. Vérifie son nom en haut à droite.' },
       done: (c) => { const r = H.repo(c); return !!(r && c.w.ws.opened[c.ide] === r.path); },
-      result: { vscode: 'L’explorateur affiche `README.md`, et la barre d’état affiche la branche `main`.', rstudio: 'Le panneau **Files** affiche le projet, et l’onglet **Git** est apparu.' },
+      result: { vscode: 'L’explorateur affiche un dossier vide, et la barre d’état affiche la branche `main`.', rstudio: 'Le panneau **Files** affiche le projet, et l’onglet **Git** est apparu.' },
       explain: { vscode: 'VS Code est l’interface : il affiche le dossier et dialogue avec Git. Le dépôt, lui, est le dossier et son sous-dossier caché `.git`.', rstudio: 'RStudio a ajouté deux fichiers : `etude-entreprises.Rproj` (le projet RStudio) et `.gitignore`. Ils apparaissent dans l’onglet Git comme des fichiers nouveaux.' },
       concepts: ['ide', 'depot-local'],
       hints: [
@@ -256,16 +256,16 @@ export const m3 = {
       ],
     },
     {
-      id: 'see', title: 'Reconnaître les fichiers et le dépôt local', tool: 'ide',
-      guide: { vscode: 'Ouvre `README.md` dans l’éditeur, puis tape `git remote -v` dans le terminal (**Terminal** › **New Terminal**).', rstudio: 'Ouvre `README.md` depuis **Files**, puis tape `git remote -v` dans l’onglet **Terminal** (pas dans la Console).' },
-      done: (c) => c.has('open-file', (e) => e.file === 'README.md') && c.has('remote-view'),
+      id: 'see', title: 'Reconnaître le dépôt local', tool: 'ide',
+      guide: { vscode: 'Le dossier ne contient encore aucun fichier suivi. Ouvre le terminal (**Terminal** › **New Terminal**) et tape `git remote -v`.', rstudio: 'Le dossier ne contient que les fichiers ajoutés par RStudio. Ouvre l’onglet **Terminal** (pas la Console) et tape `git remote -v`.' },
+      done: (c) => c.has('remote-view'),
       result: 'Le terminal affiche `origin  https://gitlab.example.com/stagiaire/etude-entreprises.git`.',
       explain: '`origin` est le nom du **remote** : le lien entre ton dépôt local et le dépôt distant. Il a été créé par le clonage.',
       concepts: ['remote', 'depot-local'],
       hints: [
-        'Deux vérifications : un fichier du projet, puis l’adresse du dépôt distant connue de Git.',
+        'Le dépôt local sait où se trouve le dépôt distant : demande-le à Git.',
         { vscode: 'Explorateur à gauche ; terminal dans le panneau du bas.', rstudio: 'Panneau **Files** en bas à droite ; onglet **Terminal** en bas à gauche, à côté de **Console**.' },
-        { text: { vscode: 'Clique sur `README.md`, ouvre le terminal et tape `git remote -v`.', rstudio: 'Clique sur `README.md` dans **Files**, ouvre l’onglet **Terminal** et tape `git remote -v`.' }, targets: { vscode: ['vs.explorer', 'vs.file-README.md', 'vs.terminal-tab', 'vs.terminal-input'], rstudio: ['rs.files-README.md', 'rs.tab-terminal', 'rs.terminal-input'] } },
+        { text: { vscode: 'Ouvre le terminal et tape `git remote -v`.', rstudio: 'Ouvre l’onglet **Terminal** et tape `git remote -v`.' }, targets: { vscode: ['vs.terminal-tab', 'vs.terminal-input'], rstudio: ['rs.tab-terminal', 'rs.terminal-input'] } },
       ],
     },
     quiz('local', 'Où est mon dépôt local ?', 'Où se trouve maintenant ton dépôt local ?', [
@@ -286,30 +286,30 @@ export const m3 = {
 export const m4 = {
   id: 'm4', num: 4, world: 'parcours', title: 'Enregistrer une modification', short: 'Commit',
   params: M,
-  objective: 'Ajouter au README une phrase qui décrit l’étude, observer le changement, le préparer, puis créer un **commit** avec un message descriptif.',
+  objective: 'Créer le fichier `README.md` avec un titre et une phrase qui décrit l’étude, observer le changement, le préparer, puis créer le **premier commit** avec un message descriptif.',
   why: 'Un commit enregistre une version dans l’historique **local**. Il est la condition pour pouvoir partager un changement.',
   ready: (w) => Object.values(w.ws.repos).some((r) => r.remote.url === E.httpsUrl('stagiaire', 'etude-entreprises')),
   setup(w, { ide }) { H.makeProject(w, M); const t = H.makeSavedToken(w); H.makeClone(w, M, t, ide); },
   steps: [
     {
-      id: 'edit', title: 'Modifier le README et l’enregistrer', tool: 'ide',
-      guide: 'Ouvre `README.md`, ajoute sous le titre une phrase, par exemple : « Étude fictive sur la démographie des entreprises d’un territoire. » Puis enregistre le fichier (**Ctrl+S**).',
+      id: 'edit', title: 'Créer le README et l’enregistrer', tool: 'ide',
+      guide: { vscode: 'Dans l’explorateur, crée un fichier `README.md` (icône **New File…**). Écris un titre, `# etude-entreprises`, puis une phrase, par exemple : « Étude fictive sur la démographie des entreprises d’un territoire. » Enregistre (**Ctrl+S**).', rstudio: 'Dans **Files**, choisis **New Blank File** › **Markdown File** et nomme-le `README.md`. Écris un titre, `# etude-entreprises`, puis une phrase, par exemple : « Étude fictive sur la démographie des entreprises d’un territoire. » Enregistre (**Ctrl+S**).' },
       done: (c) => H.fileChanged(H.repo(c), 'README.md') || H.committedFile(H.repo(c), 'README.md'),
-      result: { vscode: 'Le fichier apparaît avec la lettre **M** (modified) dans l’explorateur et dans **Source Control**.', rstudio: 'Le fichier apparaît avec le statut **M** dans l’onglet **Git**.' },
-      explain: 'Tu as modifié un fichier du **répertoire de travail**. Git voit la différence avec le dernier commit, mais n’a encore rien enregistré.',
+      result: { vscode: 'Le fichier apparaît avec la lettre **U** (untracked, non suivi) dans l’explorateur et dans **Source Control**.', rstudio: 'Le fichier apparaît avec le statut **?** (non suivi) dans l’onglet **Git**.' },
+      explain: 'Tu as créé un fichier dans le **répertoire de travail**. Git le voit, mais ne le suit pas encore : il n’a encore rien enregistré.',
       concepts: ['depot-local'],
       hints: [
-        'Une modification ne compte pour Git qu’une fois le fichier enregistré sur le disque.',
-        { vscode: 'Un point sur l’onglet du fichier signale une modification non enregistrée.', rstudio: 'Un titre d’onglet en rouge avec * signale une modification non enregistrée.' },
-        { text: 'Clique dans le texte, ajoute ta phrase, puis appuie sur **Ctrl+S** (ou utilise le menu **File** › **Save**).', targets: { vscode: ['vs.file-README.md', 'vs.editor'], rstudio: ['rs.files-README.md', 'rs.editor', 'rs.save'] } },
+        'Un fichier ne compte pour Git qu’une fois enregistré sur le disque.',
+        { vscode: 'L’en-tête de l’explorateur propose **New File…** ; un point sur l’onglet signale un fichier non enregistré.', rstudio: 'Le panneau **Files** propose **New Blank File** ; un titre d’onglet en rouge avec * signale un fichier non enregistré.' },
+        { text: 'Crée `README.md`, écris le titre et la phrase, puis appuie sur **Ctrl+S**.', targets: { vscode: ['vs.new-file', 'vs.file-README.md', 'vs.editor'], rstudio: ['rs.new-file', 'rs.files-README.md', 'rs.editor', 'rs.save'] } },
       ],
     },
     {
       id: 'diff', title: 'Observer le diff', tool: 'ide',
       guide: { vscode: 'Dans **Source Control**, clique sur `README.md` dans **Changes** : le diff s’ouvre.', rstudio: 'Dans l’onglet **Git**, sélectionne `README.md` puis **Diff** (ou **Commit**, qui ouvre la même fenêtre).' },
       done: (c) => c.has('diff-view'),
-      result: 'La ligne ajoutée apparaît en vert, précédée d’un `+`.',
-      explain: 'Le **diff** compare ton fichier au dernier commit, ligne par ligne. C’est le moyen de relire ce que tu t’apprêtes à enregistrer.',
+      result: 'Toutes les lignes du fichier apparaissent en vert, précédées d’un `+` : elles sont nouvelles.',
+      explain: 'Le **diff** compare ton fichier à la dernière version enregistrée, ligne par ligne ; pour un nouveau fichier, tout est ajout. Au terminal, `git diff` n’affiche rien pour un fichier non suivi : après `git add`, utilise `git diff --staged`.',
       concepts: ['diff'],
       hints: [
         'Avant d’enregistrer une version, on relit ce qui a changé.',
@@ -321,7 +321,7 @@ export const m4 = {
       id: 'stage', title: 'Préparer le changement', tool: 'ide',
       guide: { vscode: 'Dans **Changes**, clique sur **+** (Stage Changes) à côté de `README.md`.', rstudio: 'Coche la case **Staged** de `README.md`.' },
       done: (c) => { const r = H.repo(c); return !!r && (E.status(r).staged.some((s) => s.path === 'README.md') || H.committedFile(r, 'README.md')); },
-      result: { vscode: '`README.md` passe dans la section **Staged Changes**.', rstudio: 'La case **Staged** est cochée ; le statut passe à **M** dans la colonne de gauche.' },
+      result: { vscode: '`README.md` passe dans la section **Staged Changes**, avec la lettre **A** (added).', rstudio: 'La case **Staged** est cochée ; le statut passe à **A** (added).' },
       explain: 'Préparer (*stage*) un changement, c’est choisir ce qui entrera dans le prochain commit. La commande équivalente est `git add README.md`.',
       concepts: ['staging'],
       hints: [
@@ -333,12 +333,12 @@ export const m4 = {
     {
       id: 'commit', title: 'Créer le commit avec un message descriptif', tool: 'ide',
       guide: { vscode: 'Écris dans la zone **Message** une phrase qui décrit le changement, puis clique sur **Commit**.', rstudio: 'Clique sur **Commit** : dans **Review Changes**, écris le message dans **Commit message**, puis **Commit**.' },
-      done: (c) => { const r = H.repo(c); return !!r && r.commits.length > 1 && E.messageQuality(r.commits[r.commits.length - 1].message).ok && H.committedFile(r, 'README.md'); },
+      done: (c) => { const r = H.repo(c); return !!r && E.localCommits(r) > 0 && E.messageQuality(r.commits[r.commits.length - 1].message).ok && H.committedFile(r, 'README.md'); },
       warn: (c) => {
         const r = H.repo(c);
         const f = c.ev('commit-fail').pop();
-        if (f && f.reason === 'nothing-staged' && !(r && r.commits.length > 1)) return 'Rien n’était préparé : prépare d’abord `README.md` (étape précédente).';
-        if (r && r.commits.length > 1 && !E.messageQuality(r.commits[r.commits.length - 1].message).ok) {
+        if (f && f.reason === 'nothing-staged' && !(r && E.localCommits(r) > 0)) return 'Rien n’était préparé : prépare d’abord `README.md` (étape précédente).';
+        if (r && E.localCommits(r) > 0 && !E.messageQuality(r.commits[r.commits.length - 1].message).ok) {
           return { vscode: 'Le commit existe, mais son message ne dit pas ce qui a changé. Tu peux le corriger tant qu’il n’est pas envoyé : menu **…** › **Commit** › **Commit (Amend)**, ou `git commit --amend -m "Nouveau message"` dans le terminal.', rstudio: 'Le commit existe, mais son message ne dit pas ce qui a changé. Tu peux le corriger tant qu’il n’est pas envoyé : coche **Amend previous commit** dans Review Changes, ou tape `git commit --amend -m "Nouveau message"` dans le Terminal.' };
         }
         return null;
@@ -356,7 +356,7 @@ export const m4 = {
       id: 'remote', title: 'Constater que GitLab n’a pas changé', tool: 'gitlab',
       guide: 'Retourne dans GitLab, sur la page du projet : le README contient-il ta phrase ? Combien de commits sont affichés ?',
       done: (c) => { const r = H.repo(c); const lc = c.ev('commit-ok').pop(); return !!(r && lc && E.ahead(r) > 0 && c.has('view', (e) => (e.page === 'project' || e.page === 'commits' || e.page === 'file') && e.n > lc.n)); },
-      result: 'GitLab affiche toujours l’ancien README et un seul commit.',
+      result: 'GitLab affiche toujours un projet vide.',
       explain: 'Ton commit n’existe que dans le **dépôt local**. Rien n’est envoyé à GitLab tant que tu ne fais pas de **push**.',
       concepts: ['depot-local', 'push'],
       hints: [
@@ -367,9 +367,9 @@ export const m4 = {
     },
   ],
   debrief: {
-    summary: 'Ton dépôt local a **un commit d’avance** sur GitLab. C’est normal : commit et partage sont deux gestes différents.',
+    summary: 'Ton dépôt local contient le **premier commit** du projet ; GitLab est toujours vide. C’est normal : commit et partage sont deux gestes différents.',
     questions: [
-      { q: 'Que contient ton dépôt local que GitLab n’a pas ?', a: 'Le nouveau commit, avec la nouvelle version du README.' },
+      { q: 'Que contient ton dépôt local que GitLab n’a pas ?', a: 'Le premier commit, avec le README.' },
       { q: 'Quelle différence entre l’identité du commit et le jeton ?', a: 'L’identité (`user.name`, `user.email`) est inscrite dans le commit. Le jeton sert à s’authentifier auprès de GitLab ; il n’apparaît jamais dans l’historique.' },
     ],
   },
@@ -385,22 +385,23 @@ export const m5 = {
   steps: [
     {
       id: 'push', title: 'Envoyer le commit', tool: 'ide',
-      guide: { vscode: 'Dans **Source Control**, clique sur **Sync Changes** (qui récupère puis envoie), ou passe par **…** › **Push**.', rstudio: 'Dans l’onglet **Git**, clique sur **Push** (flèche verte vers le haut).' },
+      guide: { vscode: 'C’est le premier envoi : la branche `main` n’existe pas encore sur GitLab. Dans **Source Control**, clique sur **Publish Branch**.', rstudio: 'C’est le premier envoi : la branche `main` n’a pas encore d’équivalent sur GitLab, et RStudio grise les boutons **Push** et **Pull** tant qu’elle n’est pas suivie. Dans l’onglet **Terminal**, tape `git push -u origin main`. Les boutons fonctionneront ensuite.' },
       done: (c) => H.remoteHasLocalHead(c),
       warn: (c) => {
         const f = c.ev('push-fail').pop();
         if (!f || H.remoteHasLocalHead(c)) return null;
         if (f.reason === 'auth') return 'GitLab refuse l’authentification. Le jeton fourni est-il bien celui de ton gestionnaire de mots de passe, et est-il encore actif ?';
         if (f.reason === 'scope') return 'Le jeton utilisé ne permet pas d’écrire (`write_repository` absent). La mission 6 explique comment corriger cela.';
+        if (f.reason === 'no-upstream') return 'Git ne sait pas encore où envoyer la branche : pour ce premier envoi, précise-le avec `git push -u origin main` (`-u` enregistre la branche suivie).';
         return null;
       },
-      result: { vscode: 'La notification se ferme ; la barre d’état n’affiche plus de commit à envoyer (↑0).', rstudio: 'La fenêtre **Git Push** affiche `main -> main`.' },
-      explain: 'Le push envoie les commits que GitLab n’a pas encore. Git réutilise les identifiants mémorisés lors du clonage : aucune nouvelle demande n’apparaît.',
+      result: { vscode: 'La branche est publiée : la barre d’état affiche `0↓ 0↑`.', rstudio: 'Le Terminal affiche `* [new branch] main -> main` puis `branch \'main\' set up to track \'origin/main\'.`' },
+      explain: 'Le push envoie les commits que GitLab n’a pas encore. Ce premier push crée la branche `main` sur GitLab et l’enregistre comme branche **suivie** : les envois suivants se feront d’un simple `git push` (ou **Sync Changes**, **Push**). Git réutilise les identifiants mémorisés lors du clonage.',
       concepts: ['push', 'gestionnaire'],
       hints: [
-        'Après le commit, l’IDE signale qu’un commit attend d’être envoyé.',
-        { vscode: 'Le bouton bleu **Sync Changes** dans Source Control, ou l’indicateur ↑1 de la barre d’état.', rstudio: 'Barre d’outils de l’onglet **Git** : **Pull** (bleu) et **Push** (vert).' },
-        { text: { vscode: 'Clique sur **Sync Changes** (ou **…** › **Push**).', rstudio: 'Clique sur **Push**.' }, targets: { vscode: ['vs.sync', 'vs.more', 'vs.push', 'vs.status-sync'], rstudio: ['rs.git-push'] } },
+        'Le premier envoi d’une branche demande de dire à Git où l’envoyer.',
+        { vscode: 'Le bouton bleu **Publish Branch** dans Source Control, ou dans la barre d’état.', rstudio: 'L’onglet **Terminal**, en bas à gauche, à côté de la Console.' },
+        { text: { vscode: 'Clique sur **Publish Branch**.', rstudio: 'Tape `git push -u origin main` dans le Terminal.' }, targets: { vscode: ['vs.publish', 'vs.status-sync'], rstudio: ['rs.tab-terminal', 'rs.terminal-input'] } },
       ],
     },
     {
@@ -418,9 +419,9 @@ export const m5 = {
     },
     {
       id: 'content', title: 'Vérifier le contenu du README', tool: 'gitlab',
-      guide: 'Ouvre la page du projet ou le fichier `README.md` : ta phrase y figure-t-elle ?',
+      guide: 'Ouvre la page du projet : GitLab y affiche maintenant ton `README.md`. Ta phrase y figure-t-elle ?',
       done: (c) => { const ok = c.ev('push-ok').pop(); return !!ok && c.has('view', (e) => (e.page === 'project' || (e.page === 'file' && e.file === 'README.md')) && e.n > ok.n); },
-      result: 'Le README affiché par GitLab contient ta phrase.',
+      result: 'Le projet n’est plus vide : GitLab affiche ton README, avec ta phrase.',
       explain: 'La réussite est visible des deux côtés : l’IDE n’a plus rien à envoyer, et GitLab affiche la nouvelle version.',
       concepts: ['push'],
       hints: [
@@ -445,13 +446,13 @@ const M7 = { ns: 'stagiaire', project: 'enquete-loyers', file: 'synthese.qmd' };
 export const m7 = {
   id: 'm7', num: 7, world: 'autonome', title: 'Refaire seul', short: 'Autonomie', autonomousOnly: true,
   params: M7,
-  objective: 'Nouveau projet : crée sur GitLab un projet privé `enquete-loyers` (avec README), prépare un accès adapté, clone-le dans ton environnement, ajoute un fichier `synthese.qmd` avec un titre, enregistre-le dans un commit au message descriptif, envoie-le, puis vérifie le résultat dans GitLab.',
+  objective: 'Nouveau projet : crée sur GitLab un projet privé et vide `enquete-loyers` (case README décochée), prépare un accès adapté, clone-le dans ton environnement, ajoute un fichier `synthese.qmd` avec un titre, enregistre-le dans un commit au message descriptif, envoie-le, puis vérifie le résultat dans GitLab.',
   why: 'Même parcours, autres noms, sans consignes détaillées. Les aides restent disponibles si tu en as besoin.',
   worldOptions: { today: '2026-04-13' },
   setup() {},
   steps: [
-    { id: 'p', title: 'Projet privé avec README', tool: 'gitlab', done: (c) => { const p = H.project(c); return !!(p && p.visibility === 'private' && p.commits.length); },
-      hints: ['Comme en mission 1.', '**+** › New project/repository › Create blank project.', { text: 'Nom `enquete-loyers`, **Private**, README coché, **Create project**.', targets: ['gl.create-new', 'gl.menu-new-project', 'gl.blank-card'] }] },
+    { id: 'p', title: 'Projet privé, créé vide', tool: 'gitlab', done: (c) => { const p = H.project(c); return !!(p && p.visibility === 'private' && H.createdEmpty(c)); },
+      hints: ['Comme en mission 1.', '**+** › New project/repository › Create blank project.', { text: 'Nom `enquete-loyers`, **Private**, case README **décochée**, **Create project**.', targets: ['gl.create-new', 'gl.menu-new-project', 'gl.blank-card'] }] },
     { id: 't', title: 'Jeton limité à write_repository, valeur conservée', tool: 'gitlab', done: (c) => H.writeTokens(c).some((t) => H.minimalWrite(t) && H.savedInVault(c, t)),
       hints: ['Que dois-tu pouvoir faire ? Cloner puis envoyer.', 'Avatar › Edit profile › Access › Personal access tokens › Generate token › Legacy token.', { text: 'Coche `write_repository`, génère, copie la valeur et range-la dans **Mots de passe**.', targets: ['gl.avatar', 'gl.edit-profile', 'gl.nav-access-tokens', 'tb.vault'] }] },
     { id: 'c', title: 'Dépôt cloné et ouvert dans l’IDE', tool: 'ide', done: (c) => { const r = H.repo(c); return !!(r && c.w.ws.opened[c.ide] === r.path); },
@@ -461,7 +462,7 @@ export const m7 = {
     { id: 'k', title: 'Commit descriptif contenant synthese.qmd', tool: 'ide', done: (c) => { const r = H.repo(c); return !!r && H.committedFile(r, 'synthese.qmd') && E.messageQuality(r.commits[r.commits.length - 1].message).ok; },
       hints: ['Prépare puis commite.', { vscode: 'Source Control : **+** puis Message et **Commit**.', rstudio: 'Onglet Git : case Staged, puis Commit.' }, { text: 'Un message comme « Ajoute une première synthèse de l’enquête ».', targets: { vscode: ['vs.commit-message', 'vs.commit-button'], rstudio: ['rs.git-commit'] } }] },
     { id: 'u', title: 'Commit envoyé sur GitLab', tool: 'ide', done: (c) => { const p = H.project(c); return !!(p && p.commits.some((x) => x.tree['synthese.qmd'] !== undefined)); },
-      hints: ['Un commit local n’est pas encore sur GitLab.', { vscode: 'Sync Changes ou … › Push.', rstudio: 'Bouton Push de l’onglet Git.' }, { text: 'Envoie le commit.', targets: { vscode: ['vs.sync', 'vs.more', 'vs.status-sync'], rstudio: ['rs.git-push'] } }] },
+      hints: ['Un commit local n’est pas encore sur GitLab ; c’est le premier envoi de la branche.', { vscode: 'Publish Branch dans Source Control.', rstudio: 'Terminal : git push -u origin main.' }, { text: 'Envoie le commit.', targets: { vscode: ['vs.publish', 'vs.status-sync'], rstudio: ['rs.tab-terminal', 'rs.terminal-input'] } }] },
     { id: 'v', title: 'Résultat vérifié dans GitLab', tool: 'gitlab', done: (c) => { const ok = c.ev('push-ok').pop(); return !!ok && c.has('view', (e) => ['commits', 'commit', 'file', 'project'].includes(e.page) && e.n > ok.n); },
       hints: ['Le résultat se constate côté serveur.', 'Onglet GitLab : Code › Commits, ou la liste des fichiers.', { text: 'Ouvre le projet dans GitLab.', targets: ['tb.tool-gitlab', 'gl.nav-commits'] }] },
   ],

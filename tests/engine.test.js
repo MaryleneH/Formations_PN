@@ -200,3 +200,30 @@ test('messages de commit : descriptifs acceptés sous plusieurs formes', () => {
   for (const ok of ['Ajoute l’objectif de l’étude au README', 'Décrit les sources de données', 'Précise le périmètre des entreprises', 'Add study goal to README']) assert.ok(E.messageQuality(ok).ok, ok);
   for (const ko of ['maj', 'modif README', 'update', 'test', 'Mise à jour du fichier', 'wip']) assert.equal(E.messageQuality(ko).ok, false, ko);
 });
+
+test('projet vide : clonage, premier commit, premier push qui crée la branche', () => {
+  const w = E.blankWorld('t');
+  E.createProject(w, { name: 'etude-entreprises', readme: false });
+  const t = E.createToken(w, { name: 'a', scopes: ['write_repository'] }, rng).token;
+  const r = E.cloneRepo(w, { url: URL, parentDir: P, auth: { username: 'u', secret: t.value } });
+  assert.ok(r.ok);
+  assert.match(r.out.join('\n'), /You appear to have cloned an empty repository/);
+  const path = r.repo.path;
+  assert.equal(E.push(w, path).code, 'no-commit');
+  E.writeFile(w, path, 'README.md', '# etude-entreprises\n');
+  E.stage(w, path, ['README.md']);
+  const c = E.commit(w, path, { message: 'Crée le README de l’étude' });
+  assert.match(c.out[0], /^\[main \(root-commit\) [0-9a-f]{7}\]/);
+  const np = E.push(w, path);
+  assert.equal(np.code, 'no-upstream');
+  assert.match(np.out.join('\n'), /git push --set-upstream origin main/);
+  const ok = E.push(w, path, { explicit: true, setUpstream: true });
+  assert.ok(ok.ok);
+  assert.ok(ok.out.includes(' * [new branch]      main -> main'));
+  assert.ok(ok.out.includes("branch 'main' set up to track 'origin/main'."));
+  assert.equal(E.getProject(w, 'stagiaire', 'etude-entreprises').commits.length, 1);
+  E.writeFile(w, path, 'README.md', '# etude-entreprises\n\nSuite.\n');
+  E.stage(w, path, ['README.md']);
+  E.commit(w, path, { message: 'Ajoute la suite du README' });
+  assert.ok(E.push(w, path).ok, 'ensuite, un simple push suffit');
+});

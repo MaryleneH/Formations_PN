@@ -423,6 +423,9 @@ export function status(repo) {
   return { staged, unstaged, untracked, clean: !staged.length && !unstaged.length && !untracked.length };
 }
 
+/** Commits créés dans ce dépôt local depuis le clonage. */
+export const localCommits = (repo) => (repo ? repo.commits.length - (repo.base || 0) : 0);
+
 /** Nombre de commits locaux absents du dernier état connu du distant (origin/main). */
 export function ahead(repo) {
   if (!repo.commits.length) return 0;
@@ -439,6 +442,9 @@ function makeRepo(w, path, project, url) {
     branch: project.defaultBranch,
     commits,
     originHead: commits.length ? commits[commits.length - 1].id : null,
+    // Branche suivie (upstream) : le clonage d'un dépôt vide n'en configure pas.
+    upstream: commits.length > 0,
+    base: commits.length,
     index: clone(tree),
     work: clone(tree),
     config: {},
@@ -639,9 +645,17 @@ export function commit(w, repoPath, { message, amend = false, all = false, via =
 
 const isAncestor = (commits, id) => !id || commits.some((c) => c.id === id);
 
-export function push(w, repoPath, { auth, via = 'terminal' } = {}) {
+export function push(w, repoPath, { auth, via = 'terminal', explicit = false, setUpstream = false } = {}) {
   const repo = w.ws.repos[repoPath];
   const u = parseRepoUrl(repo.remote.url);
+  if (!repo.commits.length) {
+    emit(w, 'push-fail', { reason: 'no-commit', via });
+    return { ok: false, code: 'no-commit', out: [`error: src refspec ${repo.branch} does not match any`, `error: failed to push some refs to '${repo.remote.url}'`] };
+  }
+  if (!repo.upstream && !explicit) {
+    emit(w, 'push-fail', { reason: 'no-upstream', via });
+    return { ok: false, code: 'no-upstream', out: [`fatal: The current branch ${repo.branch} has no upstream branch.`, 'To push the current branch and set the remote as upstream, use', '', `    git push --set-upstream origin ${repo.branch}`, ''] };
+  }
   if (u.kind === 'ssh') { emit(w, 'push-fail', { reason: 'ssh', via }); return { ok: false, code: 'ssh', out: [...MSG.ssh] }; }
   const a = resolveAuth(w, auth);
   if (a.needAuth) { emit(w, 'auth-prompt', { op: 'push', via }); return { ok: false, needAuth: true, prompts: authPrompts() }; }
@@ -671,9 +685,10 @@ export function push(w, repoPath, { auth, via = 'terminal' } = {}) {
   const remoteHead = headCommit(p.commits);
   const localHead = headCommit(repo.commits);
   const to = `To ${repo.remote.url}`;
-  if (!localHead || (remoteHead && remoteHead.id === localHead.id)) {
+  if (remoteHead && remoteHead.id === localHead.id) {
     emit(w, 'push-noop', { via, path: repoPath, dirty: !status(repo).clean });
-    repo.originHead = remoteHead ? remoteHead.id : null;
+    repo.originHead = remoteHead.id;
+    if (setUpstream) repo.upstream = true;
     return { ok: true, code: 'up-to-date', out: ['Everything up-to-date'], summary: "Rien à envoyer : GitLab a déjà tous tes commits. Les modifications non commitées ne partent jamais avec un push." };
   }
   if (remoteHead && !isAncestor(repo.commits, remoteHead.id)) {
@@ -690,9 +705,11 @@ export function push(w, repoPath, { auth, via = 'terminal' } = {}) {
   }
   p.commits = clone(repo.commits);
   repo.originHead = localHead.id;
+  const tracked = setUpstream && !repo.upstream;
+  if (setUpstream) repo.upstream = true;
   emit(w, 'push-ok', { via, path: repoPath, project: projectKey(p.ns, p.path), count: n, head: localHead.id, dirty: !status(repo).clean });
   return {
-    ok: true, out: [...head, to, `   ${short(remoteHead && remoteHead.id)}..${short(localHead.id)}  ${repo.branch} -> ${repo.branch}`],
+    ok: true, out: [...head, to, remoteHead ? `   ${short(remoteHead.id)}..${short(localHead.id)}  ${repo.branch} -> ${repo.branch}` : ` * [new branch]      ${repo.branch} -> ${repo.branch}`, ...(tracked ? [`branch '${repo.branch}' set up to track 'origin/${repo.branch}'.`] : [])],
     summary: `${n} commit(s) envoyé(s) : GitLab affiche maintenant ${short(localHead.id)} sur ${repo.branch}.`,
   };
 }
@@ -701,6 +718,9 @@ export function push(w, repoPath, { auth, via = 'terminal' } = {}) {
 export function pull(w, repoPath, { auth, via = 'terminal', fetchOnly = false } = {}) {
   const repo = w.ws.repos[repoPath];
   const u = parseRepoUrl(repo.remote.url);
+  if (!fetchOnly && !repo.upstream) {
+    return { ok: false, code: 'no-upstream', out: ['There is no tracking information for the current branch.', 'Please specify which branch you want to merge with.', '', `    git branch --set-upstream-to=origin/<branch> ${repo.branch}`, ''] };
+  }
   if (u.kind === 'ssh') return { ok: false, code: 'ssh', out: [...MSG.ssh] };
   const a = resolveAuth(w, auth);
   if (a.needAuth) { emit(w, 'auth-prompt', { op: 'pull', via }); return { ok: false, needAuth: true, prompts: authPrompts() }; }

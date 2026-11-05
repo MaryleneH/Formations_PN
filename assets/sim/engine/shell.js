@@ -258,7 +258,8 @@ function git(w, args, ctx) {
       if (pos[0] && pos[0] !== 'origin') return { out: [line(`fatal: '${pos[0]}' does not appear to be a git repository`, 'err'), line('fatal: Could not read from remote repository.', 'err')] };
       if (pos[1] && pos[1] !== repo.branch && pos[1] !== 'HEAD') return { out: [line(`error: src refspec ${pos[1]} does not match any`, 'err'), line(`error: failed to push some refs to '${repo.remote.url}'`, 'err')] };
       if (rest.some((a) => a === '-f' || a === '--force')) return { out: [limit('Le push forcé réécrit l’historique partagé : il est hors du périmètre de ce parcours.')], code: 'unsupported' };
-      return withAuth(w, E.push(w, repo.path, { via }), (auth) => E.push(w, repo.path, { via, auth }));
+      const opts = { via, explicit: pos.length >= 2, setUpstream: rest.includes('-u') || rest.includes('--set-upstream') };
+      return withAuth(w, E.push(w, repo.path, opts), (auth) => E.push(w, repo.path, { ...opts, auth }));
     }
     case 'pull': case 'fetch': {
       const fetchOnly = sub === 'fetch';
@@ -305,10 +306,10 @@ function gitStatus(w, repo, rest) {
   }
   const out = [line(`On branch ${repo.branch}`)];
   const n = E.ahead(repo);
-  if (repo.originHead !== null || repo.commits.length) {
+  if (repo.upstream && repo.commits.length) {
     if (n) out.push(line(`Your branch is ahead of 'origin/${repo.branch}' by ${n} commit${n > 1 ? 's' : ''}.`), line('  (use "git push" to publish your local commits)'));
     else out.push(line(`Your branch is up to date with 'origin/${repo.branch}'.`));
-  } else out.push(line(''), line('No commits yet'));
+  } else if (!repo.commits.length) out.push(line(''), line('No commits yet'));
   const lab = { new: 'new file:   ', modified: 'modified:   ', deleted: 'deleted:    ' };
   if (st.staged.length) {
     out.push(line(''), line('Changes to be committed:'), line('  (use "git restore --staged <file>..." to unstage)'));

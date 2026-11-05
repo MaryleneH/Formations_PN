@@ -86,8 +86,9 @@ async function mission1(p) {
   await click(p, 'gl.blank-card');
   await fill(p, 'gl.field-name', 'etude-entreprises');
   assert(await p.locator(T('gl.field-slug')).inputValue() === 'etude-entreprises', 'slug automatique');
+  await p.locator(`${T('gl.readme')} input`).uncheck();
   await click(p, 'gl.create-project');
-  await p.locator('.gl-readme').waitFor();
+  await p.locator('.gl-empty-repo').waitFor();
   await answerQuiz(p);
   await expectDone(p, 'm1');
 }
@@ -140,7 +141,6 @@ async function mission3(p, ide) {
     await click(p, 'pick.ok');
     await authWithVault(p, ide);
     await click(p, 'vs.notif-open');
-    await click(p, 'vs.file-README.md');
     await click(p, 'vs.terminal-tab');
     await p.locator(T('vs.terminal-input')).fill('git remote -v');
     await p.locator(T('vs.terminal-input')).press('Enter');
@@ -157,7 +157,6 @@ async function mission3(p, ide) {
     await click(p, 'rs.create');
     await authWithVault(p, ide);
     await p.locator(T('rs.tab-git')).waitFor();
-    await click(p, 'rs.files-README.md');
     // Une commande Git tapée dans la Console R : retour pédagogique.
     await click(p, 'rs.tab-console');
     await p.locator(T('rs.console-input')).fill('git remote -v');
@@ -173,11 +172,20 @@ async function mission3(p, ide) {
 
 async function mission4(p, ide) {
   const editor = ide === 'vscode' ? 'vs.editor' : 'rs.editor';
-  if (ide === 'vscode') await click(p, 'vs.file-README.md'); else await click(p, 'rs.files-README.md');
+  if (ide === 'vscode') {
+    await click(p, 'vs.explorer');
+    await click(p, 'vs.new-file');
+    await p.locator('[data-fk="vs.newfile-input"]').fill('README.md');
+    await p.locator('[data-fk="vs.newfile-input"]').press('Enter');
+  } else {
+    await click(p, 'rs.new-file');
+    await p.locator('[data-fk="vsm-Markdown File"]').click();
+    assert(await p.locator('[data-fk="rs.newfile-input"]').inputValue() === 'README.md', 'nom proposé');
+    await p.locator('[data-fk="rs.newfile-input"]').press('Enter');
+  }
   const ed = p.locator(T(editor));
   await ed.click();
-  await ed.press('Control+End');
-  await ed.type('\nÉtude fictive sur la démographie des entreprises d’un territoire.\n');
+  await ed.type('# etude-entreprises\n\nÉtude fictive sur la démographie des entreprises d’un territoire.\n');
   await ed.press('Control+s');
   if (ide === 'vscode') {
     await click(p, 'vs.scm');
@@ -196,7 +204,7 @@ async function mission4(p, ide) {
     await p.locator('.rs-review [data-fk="rs.review-close"]').click();
   }
   const w = await world(p);
-  assert(w.remote.projects['stagiaire/etude-entreprises'].commits.length === 1, 'le distant ne doit pas changer après un commit');
+  assert(w.remote.projects['stagiaire/etude-entreprises'].commits.length === 0, 'le distant ne doit pas changer après un commit');
   await click(p, 'tb.tool-gitlab');
   await p.locator('.gl-logo').click();
   await click(p, 'gl.project-link');
@@ -206,15 +214,17 @@ async function mission4(p, ide) {
 async function mission5(p, ide) {
   await click(p, 'tb.tool-ide');
   if (ide === 'vscode') {
-    await click(p, 'vs.sync');
-    await click(p, 'vs.dialog-ok');
+    await click(p, 'vs.scm');
+    await click(p, 'vs.publish');
   } else {
-    await click(p, 'rs.git-push');
-    await p.locator('.rs-dialog .rs-output').waitFor();
-    await p.locator('[data-fk="rsd-close"]').click();
+    await click(p, 'rs.tab-git');
+    assert(await p.locator(T('rs.git-push')).first().isDisabled(), 'Push grisé sans branche suivie');
+    await click(p, 'rs.tab-terminal');
+    await p.locator(T('rs.terminal-input')).fill('git push -u origin main');
+    await p.locator(T('rs.terminal-input')).press('Enter');
   }
   const w = await world(p);
-  assert(w.remote.projects['stagiaire/etude-entreprises'].commits.length === 2, 'le push met à jour le distant');
+  assert(w.remote.projects['stagiaire/etude-entreprises'].commits.length === 1, 'le push met à jour le distant');
   await click(p, 'tb.tool-gitlab');
   await click(p, 'gl.nav-commits');
   await click(p, 'gl.project-link');

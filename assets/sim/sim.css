@@ -1036,3 +1036,8 @@ body:has(#sim-app) .nav-footer, body:has(#sim-app) footer.footer { display: none
 .sim[data-focus="on"] .coach-robot { width: 40px; height: 52px; }
 .sim[data-focus="on"] .coach-robot svg { width: 40px; height: 52px; }
 @media (prefers-reduced-motion: reduce) { .coach-robot .rb-arm, .coach-robot .rb-head { transition: none; } }
+
+.gl-empty-repo .gl-oos { display: inline-flex; margin: 0 6px; }
+.gl-cli { display: grid; gap: 4px; }
+.gl-cli h3 { font-size: 14px; margin: 6px 0 0; font-family: inherit; font-weight: 700; }
+.gl-cli-code { margin: 0; font-family: var(--mono); font-size: 12.5px; background: #f4f4f6; border: 1px solid var(--gl-line); border-radius: 6px; padding: 8px 12px; white-space: pre-wrap; word-break: break-all; }

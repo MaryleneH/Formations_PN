@@ -8,7 +8,7 @@ const txt = (r) => r.out.map((l) => l.text).join('\n');
 
 function world() {
   const w = E.blankWorld('t');
-  E.createProject(w, { name: 'etude-entreprises' });
+  E.createProject(w, { name: 'etude-entreprises' }); // avec README : branche déjà suivie
   const t = E.createToken(w, { name: 'a', scopes: ['write_repository'] }).token;
   E.hideTokenValue(w);
   return { w, t };
@@ -65,4 +65,24 @@ test('une saisie qui n’est pas un jeton d’entraînement est écartée sans �
   assert.equal(r.code, 'not-demo');
   assert.doesNotMatch(txt(r), /SECRETVALUE/);
   assert.doesNotMatch(JSON.stringify(w), /SECRETVALUE/);
+});
+
+test('dépôt vide : git push demande --set-upstream, git push -u origin main crée la branche', () => {
+  const w = E.blankWorld('t');
+  E.createProject(w, { name: 'etude-entreprises', readme: false });
+  const t = E.createToken(w, { name: 'a', scopes: ['write_repository'] }).token;
+  S.run(w, 'cd projets');
+  let r = S.run(w, 'git clone https://gitlab.example.com/stagiaire/etude-entreprises.git');
+  r = r.pending.next('stagiaire').pending.next(t.value);
+  assert.match(txt(r), /You appear to have cloned an empty repository/);
+  S.run(w, 'cd etude-entreprises');
+  assert.match(txt(S.run(w, 'git status')), /No commits yet/);
+  S.run(w, 'echo "# etude-entreprises" > README.md');
+  S.run(w, 'git add README.md');
+  S.run(w, 'git commit -m "Crée le README de l’étude"');
+  assert.match(txt(S.run(w, 'git push')), /has no upstream branch/);
+  r = S.run(w, 'git push -u origin main');
+  assert.ok(r.ok, txt(r));
+  assert.match(txt(r), /\* \[new branch\]      main -> main/);
+  assert.match(txt(S.run(w, 'git status')), /up to date with 'origin\/main'/);
 });

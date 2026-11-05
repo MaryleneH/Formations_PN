@@ -25,7 +25,9 @@ Ton nom d’utilisateur et tes jetons réels se saisissent **dans GitLab, dans V
 
 ## 1. Créer le projet (si nécessaire)
 
-Dans GitLab : **Create new (+)** › **New project/repository** › **Create blank project**. Renseigne le nom, vérifie l’espace de noms et le chemin (**Project slug**), choisis **Private**, garde **Initialize repository with a README**, puis **Create project**.
+Dans GitLab : **Create new (+)** › **New project/repository** › **Create blank project**. Renseigne le nom, vérifie l’espace de noms et le chemin (**Project slug**), choisis **Private**, puis **décoche** **Initialize repository with a README** (elle est cochée par défaut) avant **Create project**.
+
+Le projet est **vide** : tout son historique partira de ton environnement, à commencer par le README. Aucun historique distant n’est à réconcilier, en particulier quand tu envoies un projet qui existe déjà.
 
 ## 2. Retrouver l’URL du dépôt
 
@@ -102,17 +104,19 @@ git clone https://<adresse-de-ton-gitlab>/<espace>/<projet>.git
 ```
 :::
 
+Le projet étant vide, Git affiche `warning: You appear to have cloned an empty repository.` : c’est attendu.
+
 **Je reconnais un clonage réussi :**
 
 ```bash
 cd <projet>
 git remote -v      # origin  https://…/<projet>.git (fetch) / (push)
-git status         # On branch main — Your branch is up to date with 'origin/main'.
+git status         # On branch main — No commits yet
 ```
 
 ## 6. Modifier, préparer, commiter
 
-1. Je modifie un fichier et **je l’enregistre**.
+1. Je crée (ou modifie) un fichier, par exemple `README.md` avec un titre et une phrase, et **je l’enregistre**.
 2. Je relis le **diff** (VS Code : clic sur le fichier dans *Changes* ; RStudio : **Diff** ; terminal : `git diff`).
 3. Je **prépare** le changement (VS Code : **+** ; RStudio : case **Staged** ; terminal : `git add <fichier>`).
 4. Je crée le **commit** avec un message qui dit ce que le changement apporte.
@@ -120,6 +124,14 @@ git status         # On branch main — Your branch is up to date with 'origin/m
 À ce stade, GitLab n’a encore rien reçu.
 
 ## 7. Envoyer et vérifier
+
+**Le premier envoi** crée la branche `main` sur GitLab et l’enregistre comme branche suivie :
+
+- VS Code : **Publish Branch** ;
+- RStudio : les boutons **Push** et **Pull** restent grisés tant que la branche n’est pas suivie. Dans l’onglet **Terminal** : `git push -u origin main` ;
+- terminal : `git push -u origin main` (un simple `git push` répond `has no upstream branch`).
+
+**Les envois suivants** :
 
 - VS Code : **Sync Changes** (récupère puis envoie) ou **…** › **Push** ;
 - RStudio : **Push** dans l’onglet Git ;
@@ -139,6 +151,7 @@ Un même message peut avoir plusieurs causes : vérifie les hypothèses dans l�
 | `… push code to protected branches …` | la branche est **protégée**. → Branche + merge request, ou échange avec un Maintainer. |
 | `Permission denied (publickey)` | URL **SSH** sans clé configurée. → Reprendre l’URL HTTPS. |
 | `repository '…' not found` | URL erronée, ou pas d’accès au projet. → Recopier l’URL depuis **Code** ; vérifier ton accès. |
+| `The current branch main has no upstream branch.` | premier envoi d’une branche : Git ne sait pas encore où l’envoyer. → `git push -u origin main` (ou **Publish Branch**). |
 | `Author identity unknown` | `user.name` / `user.email` absents de cet environnement. → `git config --global …` |
 | GitLab ne montre pas ma modification | commit non envoyé, ou modification non commitée. → `git status`. |
 
