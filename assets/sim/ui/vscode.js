@@ -155,12 +155,15 @@ function push(app, { sync = false } = {}) {
   const repo = repoOf(app);
   if (!repo) return;
   s.menu = null;
+  // Sans branche suivie, VS Code propose de publier la branche (git push -u origin main).
+  const publish = !repo.upstream;
+  if (publish) sync = false;
   if (sync && !s.syncConfirmed) {
     s.dialog = { kind: 'sync' };
     app.render();
     return;
   }
-  log(s, [sync ? `> git pull --tags origin ${repo.branch}` : `> git push origin ${repo.branch}:${repo.branch}`]);
+  log(s, [sync ? `> git pull --tags origin ${repo.branch}` : publish ? `> git push -u origin ${repo.branch}` : `> git push origin ${repo.branch}:${repo.branch}`]);
   const run = (w, auth) => {
     if (sync) {
       const p = E.pull(w, repo.path, { auth, via: IDE });
@@ -168,7 +171,7 @@ function push(app, { sync = false } = {}) {
       log(s, p.out || []);
       log(s, [`> git push origin ${repo.branch}:${repo.branch}`]);
     }
-    return E.push(w, repo.path, { auth, via: IDE });
+    return E.push(w, repo.path, { auth, via: IDE, explicit: true, setUpstream: publish });
   };
   withCredentials(app, run, {
     ask: (prompts, resolve, cancel) => askAuth(app, prompts, resolve, cancel),
@@ -331,6 +334,7 @@ function explorerView(app, repo) {
         openFile(app, name);
       } } }, icon('file'), h('input', { type: 'text', 'aria-label': 'Nom du nouveau fichier', value: s.newFile.value, fk: 'vs.newfile-input', on: { input: (e) => { s.newFile.value = e.target.value; }, keydown: (e) => { if (e.key === 'Escape') { s.newFile = null; app.render(); } } } }),
         s.newFile.err ? h('p', { class: 'vs-input-err', role: 'alert' }, s.newFile.err) : null)) : null,
+      !files.length && !s.newFile ? h('li', { role: 'none' }, h('p', { class: 'vs-note' }, 'Ce dossier ne contient encore aucun fichier. Crée-en un avec l’icône New File… ci-dessus.')) : null,
       files.map((f) => {
         const m = mark(f);
         const t = s.tabs[s.active];
@@ -379,7 +383,9 @@ function scmView(app, repo) {
     { label: 'Unstage All Changes', fn: () => app.act((w) => E.unstage(w, repo.path, x.staged.map((y) => y.path), IDE)) },
   ], moreBtn) : null;
   const hasChanges = x.staged.length || changes.length;
-  const action = hasChanges || !ahead
+  const action = !hasChanges && repo.commits.length && !repo.upstream
+    ? btn('Publish Branch', { icon: 'up', cls: 'vs-btn vs-btn-primary', target: 'vs.publish', on: () => push(app) })
+    : hasChanges || !ahead
     ? h('div', { class: 'vs-commit-split' },
       btn('Commit', { icon: 'check', cls: 'vs-btn vs-btn-primary', target: 'vs.commit-button', disabled: !hasChanges, on: () => commit(app) }),
       btn('Commit (Amend)', { icon: 'down', hideLabel: true, cls: 'vs-btn vs-btn-primary vs-btn-drop', fk: 'vs.commit-drop', disabled: !repo.commits.length, on: () => { s.menu = 'more'; app.render(); } }))
@@ -502,7 +508,8 @@ function statusBar(app, repo) {
   const ahead = repo ? E.ahead(repo) : 0;
   return h('footer', { class: 'vs-status', 'aria-label': 'Barre d’état' },
     repo ? h('span', { class: 'vs-status-item', target: 'vs.statusbar-branch', title: 'Branche courante' }, icon('branch'), repo.branch) : null,
-    repo ? h('button', { type: 'button', class: 'vs-status-item', target: 'vs.status-sync', fk: 'vs.status-sync', title: `Synchronize Changes : ${ahead} commit(s) à envoyer`, 'aria-label': `Synchroniser : 0 à recevoir, ${ahead} à envoyer`, on: { click: () => push(app, { sync: true }) } }, icon('sync'), `0↓ ${ahead}↑`) : null,
+    repo && !repo.upstream ? h('button', { type: 'button', class: 'vs-status-item', target: 'vs.status-sync', fk: 'vs.status-sync', title: 'Publish Branch', 'aria-label': 'Publier la branche', disabled: !repo.commits.length, on: { click: () => push(app) } }, icon('up'), 'Publish Branch') : null,
+    repo && repo.upstream ? h('button', { type: 'button', class: 'vs-status-item', target: 'vs.status-sync', fk: 'vs.status-sync', title: `Synchronize Changes : ${ahead} commit(s) à envoyer`, 'aria-label': `Synchroniser : 0 à recevoir, ${ahead} à envoyer`, on: { click: () => push(app, { sync: true }) } }, icon('sync'), `0↓ ${ahead}↑`) : null,
     h('span', { class: 'vs-spacer' }),
     h('span', { class: 'vs-status-item' }, `${app.w.account.username}@${app.w.ws.host}`),
     h('span', { class: 'vs-status-item' }, 'Simulation'));

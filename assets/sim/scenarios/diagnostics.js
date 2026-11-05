@@ -77,6 +77,8 @@ function expiredOrRevoked(kind) {
       H.makeProject(w, M);
       const t = H.makeSavedToken(w, { days: 14 });
       const r = H.makeClone(w, M, t, ide);
+      H.makeLocalCommit(w, r, { append: '', message: 'Crée le README de l’étude' });
+      H.markPublished(w, r);
       H.makeLocalCommit(w, r, { message: 'Précise le périmètre des entreprises étudiées' });
       if (isExp) E.advanceClock(w, 16); else { E.advanceClock(w, 6); E.revokeToken(w, t.id); E.advanceClock(w, 2); }
     },
@@ -152,6 +154,8 @@ export const d5 = {
     H.makeProject(w, M);
     const t = H.makeSavedToken(w, { name: 'consultation', scopes: ['read_repository'] });
     const r = H.makeClone(w, M, t, ide);
+    H.makeLocalCommit(w, r, { append: '', message: 'Crée le README de l’étude' });
+    H.markPublished(w, r);
     H.makeLocalCommit(w, r, { message: 'Ajoute la source des données dans le README' });
   },
   steps: [
@@ -225,12 +229,14 @@ export const d7 = {
     H.makeProject(w, M);
     const t = H.makeSavedToken(w);
     const r = H.makeClone(w, M, t, ide);
+    H.makeLocalCommit(w, r, { append: '', message: 'Crée le README de l’étude' });
+    H.markPublished(w, r);
     H.makeLocalCommit(w, r, { message: 'Ajoute le calendrier de l’étude' });
   },
   steps: [
     { id: 'gitlab', title: 'Observer GitLab', tool: 'gitlab', guide: 'Regarde l’historique des commits du projet dans GitLab.',
       done: (c) => c.has('view', (e) => e.page === 'commits' || e.page === 'project'),
-      result: 'GitLab n’affiche que **Initial commit**.',
+      result: 'GitLab n’affiche que le commit **Crée le README de l’étude**, pas ta modification.',
       hints: ['Que voit ta collègue ?', 'Code › Commits.', { text: 'Ouvre l’historique du projet.', targets: ['gl.project-link', 'gl.nav-commits'] }] },
     { id: 'local', title: 'Observer le dépôt local', tool: 'ide', guide: { vscode: 'Regarde la barre d’état (↑) ou tape `git status` dans le terminal.', rstudio: 'Regarde l’onglet Git (« Your branch is ahead… ») ou tape `git status` dans le Terminal.' },
       done: (c) => c.has('status-view') || c.has('log-view') || c.has('view-scm') || c.has('ide-history'),
@@ -251,14 +257,14 @@ export const d7 = {
 export const d8 = {
   id: 'd8', group: 'm6', num: '6.8', world: 'd8', mode: 'depannage', title: 'Identité Git non configurée', short: 'Identité absente',
   params: M,
-  situation: 'Tu travailles dans un **nouvel environnement** (par exemple un nouveau service Onyxia). Le projet est cloné, `README.md` est modifié et préparé. Tu crées ton premier commit.',
+  situation: 'Tu travailles dans un **nouvel environnement** (par exemple un nouveau service Onyxia). Le projet, vide, est cloné ; tu viens de créer `README.md` et de le préparer. Tu crées ton premier commit.',
   objective: 'Créer le commit, après avoir identifié ce qui manque.',
   worldOptions: { noIdentity: true, host: 'vscode-onyxia-7f3c' },
   setup(w, { ide }) {
     H.makeProject(w, M);
     const t = H.makeSavedToken(w);
     const r = H.makeClone(w, M, t, ide);
-    E.writeFile(w, r.path, 'README.md', r.work['README.md'] + '\nDonnées : fichier fictif d’entreprises (2025).\n');
+    E.writeFile(w, r.path, 'README.md', '# etude-entreprises\n\nDonnées : fichier fictif d’entreprises (2025).\n');
     E.stage(w, r.path, ['README.md']);
   },
   steps: [
@@ -291,7 +297,7 @@ export const d9 = {
   objective: 'Identifier pourquoi le push est refusé, et choisir la bonne suite.',
   setup(w, { ide }) {
     const m = { ns: 'equipe-stats', project: 'etude-entreprises' };
-    H.makeProject(w, m, { members: { stagiaire: 'Developer', 'responsable-stats': 'Maintainer' }, protectedBranches: { main: { push: 'Maintainer' } } });
+    H.makeProject(w, m, { readme: true, members: { stagiaire: 'Developer', 'responsable-stats': 'Maintainer' }, protectedBranches: { main: { push: 'Maintainer' } } });
     const t = H.makeSavedToken(w);
     const r = H.makeClone(w, m, t, ide);
     H.makeLocalCommit(w, r, { message: 'Ajoute la liste des variables de l’étude' });

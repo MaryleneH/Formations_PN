@@ -343,7 +343,7 @@ function pageProject(app, route) {
       h('span', { class: 'gl-proj-avatar gl-proj-avatar-lg', 'aria-hidden': 'true' }, p.name[0].toUpperCase()),
       h('div', {}, h('h1', { class: 'gl-h1', tabindex: '-1', fk: 'gl-h1' }, p.name, h('span', { class: 'gl-vis-badge' }, icon(p.visibility === 'private' ? 'lock' : 'eye'), p.visibility === 'private' ? 'Private' : p.visibility === 'internal' ? 'Internal' : 'Public')),
         h('p', { class: 'gl-muted' }, `Project ID: ${1000 + Object.keys(w.remote.projects).indexOf(route.project)}`))),
-    !head ? emptyRepo(app, p) : [
+    !head ? emptyRepo(app, p, h('div', { class: 'gl-menu-wrap' }, codeBtn, codeOpen ? codePanel(app, p, codeBtn) : null)) : [
       h('div', { class: 'gl-repo-bar' },
         h('span', { class: 'gl-branch' }, icon('branch'), 'main', icon('down', 'ico-sm')),
         h('span', { class: 'gl-path' }, p.path, ' /'),
@@ -369,10 +369,22 @@ function pageProject(app, route) {
   ];
 }
 
-function emptyRepo(app, p) {
-  return h('div', { class: 'gl-empty' }, h('h2', {}, 'The repository for this project is empty'),
-    h('p', {}, 'You can get started by cloning the repository or start adding files to it with one of the following options.'),
-    h('p', { class: 'gl-muted' }, 'Dans ce parcours, le projet doit être créé avec un README : recommence la mission pour le recréer.'));
+function emptyRepo(app, p, code) {
+  const url = E.httpsUrl(p.ns, p.path);
+  const block = (title, lines) => h('section', { class: 'gl-cli' }, h('h3', {}, title), h('pre', { class: 'gl-cli-code' }, lines.join('\n')));
+  return [
+    h('div', { class: 'gl-repo-bar' }, h('span', { class: 'gl-path' }, p.path), h('span', { class: 'gl-spacer' }), code),
+    h('div', { class: 'gl-empty gl-empty-repo' },
+      h('h2', {}, 'The repository for this project is empty'),
+      h('p', {}, 'You can get started by cloning the repository or start adding files to it with one of the following options.'),
+      oos('Upload File'), oos('New file'), oos('Add README')),
+    h('div', { class: 'gl-settings-block' },
+      h('h2', {}, 'Command line instructions'),
+      h('p', { class: 'gl-help' }, 'You can also upload existing files from your computer using the instructions below.'),
+      block('Git global setup', ['git config --global user.name "Camille Stagiaire"', `git config --global user.email "${E.ACCOUNT.email}"`]),
+      block('Create a new repository', [`git clone ${url}`, `cd ${p.path}`, 'git switch --create main', 'touch README.md', 'git add README.md', 'git commit -m "add README"', 'git push --set-upstream origin main']),
+      h('p', { class: 'gl-help' }, 'Dans ce parcours, ces mêmes étapes se font depuis VS Code ou RStudio (missions 3 à 5). Le jeton n’apparaît jamais dans ces commandes : Git le demande.')),
+  ];
 }
 
 const initials = (name) => (name || '?').split(/\s+/).map((x) => x[0]).join('').slice(0, 2).toUpperCase();
@@ -427,7 +439,7 @@ function pageCommits(app, route) {
     ...projectHeader(app, p, [['Commits', null]]),
     h1('Commits'),
     h('div', { class: 'gl-repo-bar' }, h('span', { class: 'gl-branch' }, icon('branch'), 'main', icon('down', 'ico-sm'))),
-    h('ol', { class: 'gl-commits', target: 'gl.commit-list' }, list.map((c) => h('li', { class: 'gl-commit-row' },
+    !list.length ? h('div', { class: 'gl-empty' }, h('p', {}, 'No commits yet.'), h('p', { class: 'gl-muted' }, 'Le dépôt est vide : aucun commit n’a encore été envoyé.')) : h('ol', { class: 'gl-commits', target: 'gl.commit-list' }, list.map((c) => h('li', { class: 'gl-commit-row' },
       h('span', { class: 'gl-avatar gl-avatar-sm', 'aria-hidden': 'true' }, initials(c.author)),
       h('div', {}, h('p', { class: 'gl-commit-msg' }, link(app, c.message.split('\n')[0], { page: 'commit', project: route.project, commit: c.id })),
         h('p', { class: 'gl-muted' }, `${c.author} authored ${enDate(c.date)}`)),

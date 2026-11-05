@@ -377,8 +377,8 @@ function gitPane(app, repo) {
       h('button', { type: 'button', class: 'rs-gbtn', target: 'rs.git-diff', fk: 'rs.git-diff', on: { click: () => openReview(app, s.sel) } }, icon('diff'), 'Diff'),
       h('button', { type: 'button', class: 'rs-gbtn', target: 'rs.git-commit', fk: 'rs.git-commit', on: { click: () => openReview(app, s.sel) } }, icon('check'), 'Commit'),
       h('span', { class: 'rs-sep', 'aria-hidden': 'true' }),
-      h('button', { type: 'button', class: 'rs-gbtn rs-pull', target: 'rs.git-pull', fk: 'rs.git-pull', 'aria-label': 'Pull', title: 'Pull', on: { click: () => doPush(app, true) } }, icon('pull'), h('span', { class: 'rs-gbtn-lbl' }, 'Pull')),
-      h('button', { type: 'button', class: 'rs-gbtn rs-push', target: 'rs.git-push', fk: 'rs.git-push', 'aria-label': 'Push', title: 'Push', on: { click: () => doPush(app) } }, icon('up'), h('span', { class: 'rs-gbtn-lbl' }, 'Push')),
+      h('button', { type: 'button', class: 'rs-gbtn rs-pull', target: 'rs.git-pull', fk: 'rs.git-pull', 'aria-label': 'Pull', title: repo.upstream ? 'Pull' : NO_UPSTREAM, disabled: !repo.upstream, on: { click: () => doPush(app, true) } }, icon('pull'), h('span', { class: 'rs-gbtn-lbl' }, 'Pull')),
+      h('button', { type: 'button', class: 'rs-gbtn rs-push', target: 'rs.git-push', fk: 'rs.git-push', 'aria-label': 'Push', title: repo.upstream ? 'Push' : NO_UPSTREAM, disabled: !repo.upstream, on: { click: () => doPush(app) } }, icon('up'), h('span', { class: 'rs-gbtn-lbl' }, 'Push')),
       h('button', { type: 'button', class: 'rs-gbtn', fk: 'rs.git-history', on: { click: () => { openReview(app); s.review.tab = 'history'; app.act((w) => { E.emit(w, 'ide-history', {}); return {}; }); } } }, icon('history'), 'History'),
       h('span', { class: 'vs-menuwrap' }, moreBtn, moreOpen ? menuBox(app, [
         { label: 'Revert…', fn: () => { if (s.sel) revert(app, s.sel); } },
@@ -388,8 +388,11 @@ function gitPane(app, repo) {
       h('span', { class: 'vs-spacer' }),
       btn('Refresh', { icon: 'sync', hideLabel: true, cls: 'rs-tool', fk: 'rs.git-refresh', on: () => app.act((w) => { E.emit(w, 'status-view', { path: repo.path, via: IDE }); return {}; }) }),
       h('span', { class: 'rs-branch' }, icon('branch'), repo.branch)),
+    !repo.upstream ? h('p', { class: 'rs-note' }, icon('info'), h('span', {}, 'Push et Pull sont grisés : la branche ', h('code', {}, repo.branch), ' n’a pas encore de branche suivie sur GitLab. Premier envoi dans l’onglet Terminal : ', h('code', {}, `git push -u origin ${repo.branch}`), '.')) : null,
     gitTable(app, repo));
 }
+
+const NO_UPSTREAM = 'Aucune branche suivie : fais le premier envoi dans le Terminal avec git push -u origin main';
 
 function revert(app, file) {
   const repo = repoOf(app);
@@ -406,10 +409,10 @@ function filesPane(app, repo) {
   const files = r ? Object.keys(r.work).sort((a, b) => a.localeCompare(b)) : [];
   const nfOpen = s.menu === 'newfile';
   const nfBtn = h('button', { type: 'button', class: 'rs-gbtn', 'aria-expanded': String(nfOpen), 'aria-haspopup': 'menu', target: 'rs.new-file', fk: 'rs.new-file', disabled: !r || r !== repo, on: { click: () => { s.menu = nfOpen ? null : 'newfile'; app.render(); } } }, icon('newfile'), 'New Blank File', icon('down', 'ico-sm'));
-  const nf = (ext, label) => ({ label, fn: () => pushDialog(app, { kind: 'newfile', ext, value: ext === '.qmd' ? 'synthese.qmd' : 'notes' + ext, focus: 'rs.newfile-input' }) || app.render() });
+  const nf = (ext, label) => ({ label, fn: () => pushDialog(app, { kind: 'newfile', ext, value: ext === '.qmd' ? 'synthese.qmd' : ext === '.md' ? 'README.md' : 'notes' + ext, focus: 'rs.newfile-input' }) || app.render() });
   return h('section', { class: 'rs-pane rs-files', 'aria-label': 'Files' },
     paneTabs(app, 'rbottom', [['files', 'Files', 'rs.tab-files'], ['plots', 'Plots', null, true], ['packages', 'Packages', null, true], ['help', 'Help', null, true], ['viewer', 'Viewer', null, true]], 'files', 'Fichiers'),
-    h('div', { class: 'rs-files-tools' }, h('span', { class: 'vs-menuwrap' }, nfBtn, nfOpen ? menuBox(app, [nf('.qmd', 'Quarto Doc…'), nf('.R', 'R Script'), nf('.txt', 'Text File')], nfBtn, s) : null)),
+    h('div', { class: 'rs-files-tools' }, h('span', { class: 'vs-menuwrap' }, nfBtn, nfOpen ? menuBox(app, [nf('.md', 'Markdown File'), nf('.qmd', 'Quarto Doc…'), nf('.R', 'R Script'), nf('.txt', 'Text File')], nfBtn, s) : null)),
     h('nav', { class: 'rs-crumbs', 'aria-label': 'Dossier affiché' }, crumbParts.map((p, i) => {
       const target = i === 0 ? w.ws.home : w.ws.home + '/' + crumbParts.slice(1, i + 1).join('/');
       return [i ? h('span', { 'aria-hidden': 'true' }, ' › ') : null, i < crumbParts.length - 1 ? h('button', { type: 'button', class: 'rs-crumb', fk: 'rs.crumb-' + i, on: { click: () => { s.filesDir = target; app.render(); } } }, p === '~' ? 'Home' : p) : h('span', {}, p === '~' ? 'Home' : p)];
@@ -585,10 +588,10 @@ function reviewWindow(app, d, top) {
     h('div', { class: 'rs-dialog-title' }, h('span', {}, 'RStudio: Review Changes'), btn('Fermer Review Changes', { icon: 'x', hideLabel: true, cls: 'rs-x', fk: 'rs.review-close', on: close })),
     h('div', { class: 'rs-review-bar' },
       h('div', { class: 'sim-seg sim-seg-sm', role: 'radiogroup', 'aria-label': 'Vue' }, [['changes', 'Changes'], ['history', 'History']].map(([k, l]) => h('button', { type: 'button', role: 'radio', 'aria-checked': String(r.tab === k), class: r.tab === k ? 'is-on' : '', fk: 'rs.rtab-' + k, on: { click: () => { r.tab = k; if (k === 'history') app.act((w) => { E.emit(w, 'ide-history', {}); return {}; }); else app.render(); } } }, l))),
-      h('span', { class: 'rs-review-status' }, ahead ? `Your branch is ahead of 'origin/${repo.branch}' by ${ahead} commit${ahead > 1 ? 's' : ''}.` : `Your branch is up to date with 'origin/${repo.branch}'.`),
+      h('span', { class: 'rs-review-status' }, !repo.upstream ? (repo.commits.length ? `On branch ${repo.branch} (no upstream).` : 'No commits yet.') : ahead ? `Your branch is ahead of 'origin/${repo.branch}' by ${ahead} commit${ahead > 1 ? 's' : ''}.` : `Your branch is up to date with 'origin/${repo.branch}'.`),
       h('span', { class: 'vs-spacer' }),
-      h('button', { type: 'button', class: 'rs-gbtn rs-pull', fk: 'rs.review-pull', on: { click: () => doPush(app, true) } }, icon('pull'), 'Pull'),
-      h('button', { type: 'button', class: 'rs-gbtn rs-push', fk: 'rs.review-push', target: 'rs.git-push', on: { click: () => doPush(app) } }, icon('up'), 'Push')),
+      h('button', { type: 'button', class: 'rs-gbtn rs-pull', fk: 'rs.review-pull', disabled: !repo.upstream, title: repo.upstream ? 'Pull' : NO_UPSTREAM, on: { click: () => doPush(app, true) } }, icon('pull'), 'Pull'),
+      h('button', { type: 'button', class: 'rs-gbtn rs-push', fk: 'rs.review-push', target: 'rs.git-push', disabled: !repo.upstream, title: repo.upstream ? 'Push' : NO_UPSTREAM, on: { click: () => doPush(app) } }, icon('up'), 'Push')),
     h('div', { class: 'rs-review-main' }, main));
   return h('div', { class: ['rs-overlay rs-overlay-review', top ? '' : 'is-under'] }, box);
 }

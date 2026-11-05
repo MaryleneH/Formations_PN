@@ -13,8 +13,9 @@ export const PROJETS = '/home/stagiaire/projets';
 // en passant par les mêmes opérations que l'apprenant.
 // ---------------------------------------------------------------------
 
+/** Projet privé créé SANS README (la case est décochée, comme enseigné). */
 export function makeProject(w, m, extra = {}) {
-  return E.createProject(w, { name: m.project, ns: m.ns || 'stagiaire', visibility: 'private', readme: true, ...extra }).project;
+  return E.createProject(w, { name: m.project, ns: m.ns || 'stagiaire', visibility: 'private', readme: false, ...extra }).project;
 }
 
 /** Jeton créé, copié puis enregistré dans le gestionnaire de mots de passe. */
@@ -38,10 +39,23 @@ export function makeClone(w, m, t, ide = 'vscode') {
 }
 
 export function makeLocalCommit(w, repo, { file = 'README.md', append = 'Étude fictive : démographie des entreprises d’un territoire imaginaire.\n', message = 'Décrit l’objectif de l’étude dans le README' } = {}) {
-  const before = repo.work[file] || '';
+  const before = repo.work[file] ?? (file === 'README.md' ? `# ${repo.name}\n\n` : '');
   E.writeFile(w, repo.path, file, before + (before && !before.endsWith('\n') ? '\n' : '') + append);
   E.stage(w, repo.path, [file]);
   return E.commit(w, repo.path, { message });
+}
+
+/**
+ * Historique déjà publié AVANT le début de l'exercice (situation de départ) :
+ * GitLab connaît les commits locaux et la branche main est suivie.
+ */
+export function markPublished(w, repo) {
+  const u = E.parseRepoUrl(repo.remote.url);
+  const p = E.getProject(w, u.ns, u.path);
+  p.commits = JSON.parse(JSON.stringify(repo.commits));
+  repo.originHead = repo.commits[repo.commits.length - 1].id;
+  repo.upstream = true;
+  repo.base = repo.commits.length;
 }
 
 /** Remet les compteurs d'événements à zéro sans perdre l'état (début de mission). */
@@ -75,14 +89,20 @@ export function fileChanged(r, file) {
   const head = E.headTree(r);
   return r.work[file] !== head[file] || r.index[file] !== head[file];
 }
-/** Le fichier a été modifié puis commité localement depuis le clonage. */
+/** Le fichier a été créé ou modifié dans un commit local (depuis le clonage). */
 export function committedFile(r, file) {
-  if (!r || r.commits.length < 2) return false;
-  const base = r.commits[0].tree;
-  return r.commits.slice(1).some((c, i) => c.tree[file] !== (i === 0 ? base : r.commits[i].tree)[file]);
+  if (!r) return false;
+  for (let k = r.base || 0; k < r.commits.length; k++) {
+    const prev = k ? r.commits[k - 1].tree : {};
+    if (r.commits[k].tree[file] !== prev[file]) return true;
+  }
+  return false;
 }
-export const localCommitsAfterClone = (r) => (r ? r.commits.length - 1 : 0);
+export const localCommitsAfterClone = (r) => E.localCommits(r);
+/** GitLab a reçu le dernier commit local, créé après le clonage. */
 export const remoteHasLocalHead = (ctx) => {
   const r = repo(ctx), p = project(ctx);
-  return !!(r && p && r.commits.length && p.commits.length && p.commits[p.commits.length - 1].id === r.commits[r.commits.length - 1].id && r.commits.length > 1);
+  return !!(r && p && E.localCommits(r) > 0 && p.commits.length && p.commits[p.commits.length - 1].id === r.commits[r.commits.length - 1].id);
 };
+/** Le projet a été créé sans README (événement de création). */
+export const createdEmpty = (ctx) => ctx.has('project-created', (e) => e.project === `${ctx.m.ns || 'stagiaire'}/${ctx.m.project}` && !e.readme);

@@ -22,11 +22,11 @@ Entre deux séances, il peut rejouer seul : la progression reste dans son naviga
 
 | Mission | Ce que l’on doit pouvoir observer |
 |---|---|
-| 1 | Un projet **privé** `etude-entreprises` avec README ; il sait dire que le dépôt n’existe que sur GitLab. |
+| 1 | Un projet **privé** `etude-entreprises`, créé **vide** (case README décochée) ; il sait dire pourquoi, et que le dépôt n’existe que sur GitLab. |
 | 2 | L’URL HTTPS copiée ; un jeton **limité à `write_repository`**, avec expiration ; la valeur rangée avant de quitter la page. |
 | 3 | Un clonage authentifié par le jeton (pas de jeton dans l’URL) ; le projet ouvert ; `git remote -v` lu et compris. |
-| 4 | Un fichier modifié, son diff relu, un commit au message descriptif ; il constate que GitLab n’a pas changé. |
-| 5 | Le push, puis la vérification **dans GitLab** du commit et du contenu. |
+| 4 | Le `README.md` créé dans l’IDE, son diff relu, le premier commit au message descriptif ; il constate que GitLab est toujours vide. |
+| 5 | Le premier push (**Publish Branch**, ou `git push -u origin main` dans RStudio), puis la vérification **dans GitLab** du commit et du contenu. |
 | 6 | Pour chaque panne : le message lu, **une hypothèse vérifiée** (liste des jetons, rôle, URL…), la bonne action. |
 | 7 | Le parcours complet, seul, sur un autre projet ; une explication de la démarche avec ses mots. |
 
@@ -49,6 +49,8 @@ Entre deux séances, il peut rejouer seul : la progression reste dans son naviga
 - **Identifiants mémorisés** : après un changement de jeton, l’ancien peut rester dans le gestionnaire d’identifiants. Montrer où il se trouve sur son système réel.
 - **Variations réelles** : la fenêtre d’authentification de son poste peut différer du simulateur. Prévoir ce moment pendant la séance 4.
 - **Identité Git** : à configurer dans **chaque** environnement (nouveau service Onyxia, nouveau poste).
+- **Case README** : GitLab la coche par défaut. Le parcours la fait décocher systématiquement ; vérifier que le geste est acquis dans ses vrais outils.
+- **Premier push** : sur un projet vide, la branche n’est pas encore suivie. VS Code propose **Publish Branch** ; RStudio grise **Push** et **Pull**, le premier envoi se fait au Terminal (`git push -u origin main`). Les exercices de dépannage partent de projets déjà publiés.
 
 ## Lire la progression
 
