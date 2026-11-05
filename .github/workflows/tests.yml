@@ -36,6 +36,8 @@ jobs:
 
       - name: Parcours dans un navigateur
         run: |
-          npm install --no-save playwright@1
+          # Version figée : une plage (playwright@1) peut résoudre une version
+          # publiée avant son playwright-core (incident du 5 novembre 2026, 1.65.0).
+          npm install --no-save playwright@1.64.1
           npx playwright install --with-deps chromium
           node tests/e2e/run.mjs
