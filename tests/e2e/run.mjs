@@ -446,7 +446,8 @@ await check('reprise de session et réinitialisation d’une mission', async () 
   await p.evaluate(() => localStorage.clear());
   await p.reload({ waitUntil: 'networkidle' });
   await mission1(p);
-  await p.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  await click(p, 'top.home');
+  await p.waitForURL(/\/projet\/index\.html$/);
   await p.locator('#gbs-resume.is-on').waitFor();
   await p.locator('#gbs-resume a').click();
   await p.waitForFunction(() => !!window.__simApp);
