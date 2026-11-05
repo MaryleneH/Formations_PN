@@ -400,7 +400,7 @@ export const m5 = {
       hints: [
         'Après le commit, l’IDE signale qu’un commit attend d’être envoyé.',
         { vscode: 'Le bouton bleu **Sync Changes** dans Source Control, ou l’indicateur ↑1 de la barre d’état.', rstudio: 'Barre d’outils de l’onglet **Git** : **Pull** (bleu) et **Push** (vert).' },
-        { text: { vscode: 'Clique sur **Sync Changes** (ou **…** › **Push**).', rstudio: 'Clique sur **Push**.' }, targets: { vscode: ['vs.sync', 'vs.more', 'vs.push'], rstudio: ['rs.git-push'] } },
+        { text: { vscode: 'Clique sur **Sync Changes** (ou **…** › **Push**).', rstudio: 'Clique sur **Push**.' }, targets: { vscode: ['vs.sync', 'vs.more', 'vs.push', 'vs.status-sync'], rstudio: ['rs.git-push'] } },
       ],
     },
     {
@@ -461,7 +461,7 @@ export const m7 = {
     { id: 'k', title: 'Commit descriptif contenant synthese.qmd', tool: 'ide', done: (c) => { const r = H.repo(c); return !!r && H.committedFile(r, 'synthese.qmd') && E.messageQuality(r.commits[r.commits.length - 1].message).ok; },
       hints: ['Prépare puis commite.', { vscode: 'Source Control : **+** puis Message et **Commit**.', rstudio: 'Onglet Git : case Staged, puis Commit.' }, { text: 'Un message comme « Ajoute une première synthèse de l’enquête ».', targets: { vscode: ['vs.commit-message', 'vs.commit-button'], rstudio: ['rs.git-commit'] } }] },
     { id: 'u', title: 'Commit envoyé sur GitLab', tool: 'ide', done: (c) => { const p = H.project(c); return !!(p && p.commits.some((x) => x.tree['synthese.qmd'] !== undefined)); },
-      hints: ['Un commit local n’est pas encore sur GitLab.', { vscode: 'Sync Changes ou … › Push.', rstudio: 'Bouton Push de l’onglet Git.' }, { text: 'Envoie le commit.', targets: { vscode: ['vs.sync', 'vs.more'], rstudio: ['rs.git-push'] } }] },
+      hints: ['Un commit local n’est pas encore sur GitLab.', { vscode: 'Sync Changes ou … › Push.', rstudio: 'Bouton Push de l’onglet Git.' }, { text: 'Envoie le commit.', targets: { vscode: ['vs.sync', 'vs.more', 'vs.status-sync'], rstudio: ['rs.git-push'] } }] },
     { id: 'v', title: 'Résultat vérifié dans GitLab', tool: 'gitlab', done: (c) => { const ok = c.ev('push-ok').pop(); return !!ok && c.has('view', (e) => ['commits', 'commit', 'file', 'project'].includes(e.page) && e.n > ok.n); },
       hints: ['Le résultat se constate côté serveur.', 'Onglet GitLab : Code › Commits, ou la liste des fichiers.', { text: 'Ouvre le projet dans GitLab.', targets: ['tb.tool-gitlab', 'gl.nav-commits'] }] },
   ],

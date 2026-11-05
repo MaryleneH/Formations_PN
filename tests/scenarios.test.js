@@ -158,3 +158,23 @@ test('chaque cible de « Montrer le geste » existe dans une vue', async () => {
   });
   assert.deepEqual(missing, []);
 });
+
+test('mission 7 : le parcours complet sur un nouveau projet, sans aide', () => {
+  const store = P.blankStore();
+  const m = byId('m7');
+  const { world: w } = P.enter(store, 'm7', 'rstudio');
+  E.createProject(w, { name: 'enquete-loyers' });
+  const t = E.createToken(w, { name: 'poste', scopes: ['write_repository'] }).token;
+  E.copy(w, { kind: 'token', text: t.value, tokenId: t.id });
+  E.vaultSave(w, { label: 'x', value: t.value });
+  E.hideTokenValue(w);
+  const r = E.cloneRepo(w, { url: E.httpsUrl('stagiaire', 'enquete-loyers'), parentDir: PRJ, auth: { username: 's', secret: t.value }, rstudioProject: true });
+  E.openFolder(w, 'rstudio', r.repo.path);
+  E.writeFile(w, r.repo.path, 'synthese.qmd', '# Synthèse de l’enquête\n');
+  E.stage(w, r.repo.path, ['synthese.qmd']);
+  E.commit(w, r.repo.path, { message: 'Ajoute une première synthèse de l’enquête' });
+  assert.ok(E.push(w, r.repo.path).ok);
+  view(w, 'commits', { project: 'stagiaire/enquete-loyers' });
+  assert.ok(P.evaluate(store, m, 'rstudio').complete);
+  assert.deepEqual(store.progress.m7.hints, {});
+});
