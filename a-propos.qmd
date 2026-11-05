@@ -1,0 +1,66 @@
+---
+title: "Sources et versions"
+subtitle: "Ce que le simulateur reproduit, d’après quelles documentations, et avec quelles limites"
+---
+
+## Versions de référence
+
+| Élément | Référence | Vérifié le |
+|---|---|---|
+| GitLab | **GitLab 19.5** (documentation officielle, branche principale `19.6.0-pre`) | 5 novembre 2026 |
+| Jeton du parcours | **Legacy token**, à scopes (menu **Generate token**) | 5 novembre 2026 |
+| VS Code | Documentation *Source Control* (dépôt `microsoft/vscode-docs`, branche `main`) | 5 novembre 2026 |
+| Git | `gitcredentials` (dépôt `git/git`, branche `master`) | 5 novembre 2026 |
+| RStudio | Parcours `File › New Project… › Version Control › Git`, onglet Git, *Review Changes* | voir la remarque ci-dessous |
+| Quarto | **1.10.20** | 5 novembre 2026 |
+
+::: {.callout-note}
+## Remarque sur RStudio
+La documentation de Posit n’était pas accessible depuis l’environnement de développement. Les libellés de RStudio reproduits (*Repository URL*, *Project directory name*, *Create project as subdirectory of*, *Create Project*, *Review Changes*, *Commit message*, *Amend previous commit*…) sont ceux de l’interface habituelle de RStudio ; ils restent à confirmer sur la version installée chez vous.
+:::
+
+## Comportements vérifiés dans les sources officielles
+
+- **Chemin des jetons** : avatar › *Edit profile* › *Access* › *Personal access tokens* › *Generate token* › *Legacy token*. Champs : *Token name*, *Token description* (facultatif), *Expiration date*, scopes, *Generate token*. Sans date : 365 jours ; au plus 365 jours par défaut ; expiration à minuit UTC.
+- **Affichage unique** : après avoir quitté ou rechargé la page, la valeur ne peut plus être affichée. Rotation (*Rotate*) et révocation (*Revoke*) depuis le menu ⋮.
+- **Jetons à permissions fines** (*Fine-grained token*) : bêta en 18.10, disponibilité générale en 19.2. Non simulés.
+- **Scopes** : `read_repository` (lecture, pull) ; `write_repository` (lecture et écriture, pull et push) ; `api` donne un accès complet à l’API (et, pour un jeton personnel, à Git sur HTTP).
+- **Git sur HTTPS** : n’importe quel nom d’utilisateur non vide, le jeton comme mot de passe.
+- **Messages de GitLab** relevés dans son code source : `HTTP Basic: Access denied. If a password was provided…`, `You are not allowed to upload code.`, `You are not allowed to push code to this project.`, `You are not allowed to push code to protected branches on this project.`, `The project you were looking for could not be found or you don't have permission to view it.`
+- **Création de projet** : *Create new (+)* › *New project/repository* › *Create blank project* ; *Project name*, *Project slug*, *Visibility Level*, *Initialize repository with a README*, *Create project*.
+- **Clonage** : bouton *Code*, *Clone with SSH* / *Clone with HTTPS*. La documentation de GitLab montre aussi la forme `https://<utilisateur>:<jeton>@…` ; le parcours ne l’enseigne pas, car elle laisse le jeton en clair dans `.git/config`.
+- **VS Code** : *Git: Clone* ou *Clone Repository* ; choix du dossier ; proposition d’ouvrir le dépôt cloné ; *Changes* / *Staged Changes* ; *Commit* ; *Sync Changes* (pull puis push) ; *More Actions* › *Push* ; indicateur ↑/↓ dans la barre d’état.
+- **Git** : `Username for 'https://…': ` puis `Password for 'https://…@…': ` ; gestionnaires `cache`, `store` et ceux des systèmes.
+
+### Références
+
+- [Jetons personnels GitLab](https://docs.gitlab.com/user/profile/personal_access_tokens/) · [Scopes des jetons](https://docs.gitlab.com/security/tokens/access_token_scopes/) · [Jetons à permissions fines](https://docs.gitlab.com/auth/tokens/fine_grained_access_tokens/)
+- [Cloner un dépôt GitLab](https://docs.gitlab.com/topics/git/clone/) · [Créer un projet](https://docs.gitlab.com/user/project/) · [Dépannage `HTTP Basic: Access denied`](https://docs.gitlab.com/user/profile/account/two_factor_authentication_troubleshooting/)
+- [Dépôts et remotes dans VS Code](https://code.visualstudio.com/docs/sourcecontrol/repos-remotes) · [Staging et commits dans VS Code](https://code.visualstudio.com/docs/sourcecontrol/staging-commits)
+- [Gestion de versions dans RStudio](https://docs.posit.co/ide/user/ide/guide/tools/version-control.html)
+- [gitcredentials](https://git-scm.com/docs/gitcredentials)
+- [GitLab Pages](https://docs.gitlab.com/user/project/pages/) · [Mot-clé `pages`](https://docs.gitlab.com/ci/yaml/#pages) · [Interactivité dans Quarto](https://quarto.org/docs/interactive/) · [Diagrammes dans Quarto](https://quarto.org/docs/authoring/diagrams.html) · [Extensions Quarto](https://quarto.org/docs/extensions/)
+
+## Choix techniques
+
+- **Site entièrement statique** : Quarto Website, HTML, CSS, modules JavaScript. Aucun serveur R ou Python, aucun appel réseau pendant les exercices.
+- **Mermaid** (intégré à Quarto) pour le schéma du trajet d’une modification.
+- **Aucune extension Quarto** : `mcanouil/quarto-gitlink` (v1.12.0, licence MIT, Quarto ≥ 1.9.38) existe et est maintenue, mais elle transforme des références de forge (issues, commits) en liens et peut afficher des compteurs récupérés en ligne. Ce site ne cite pas de références de forge et ne doit dépendre d’aucun appel réseau : elle n’apporte rien ici. Aucune extension ne fournit un moteur de simulation Git ; le moteur est écrit pour ce projet.
+- **Icônes** dessinées pour le projet, intégrées au code. **Polices** locales sous licence SIL OFL : Public Sans, Fraunces, JetBrains Mono.
+
+## Données fictives et confidentialité
+
+- Toutes les adresses (`gitlab.example.com`), personnes, projets et données sont **fictifs**.
+- Les jetons générés portent le préfixe `DEMO-TOKEN-`. Les champs de jeton n’acceptent que ces valeurs ; toute autre saisie est effacée sans être conservée ni affichée.
+- La progression est enregistrée dans le **stockage local du navigateur** (clé `git-bac-a-sable/v1`). Elle ne quitte pas l’appareil. Si ce stockage est indisponible, la session continue en mémoire.
+- Le terminal n’exécute **aucune** commande sur la machine : il interprète un sous-ensemble documenté.
+
+## Commandes reconnues par le terminal simulé
+
+`pwd`, `ls [-a]`, `cd`, `cat`, `echo "…" >> fichier`, `mkdir`, `touch`, `clear`, `help`, `git clone`, `git status [-s]`, `git diff [--staged]`, `git add`, `git restore [--staged]`, `git reset <fichier>`, `git commit -m "…" [-a] [--amend]`, `git push [origin main]`, `git pull`, `git fetch`, `git remote [-v]`, `git log [--oneline] [-n N]`, `git branch`, `git config [--global] [--list | --get | --unset]`.
+
+Toute autre commande reçoit une explication sur la limite du simulateur.
+
+## Accessibilité
+
+Navigation complète au clavier, focus visibles, libellés explicites, messages d’erreur associés aux champs, respect de `prefers-reduced-motion`, cibles d’au moins 32 px (44 px sur écran tactile), composition adaptée jusqu’à 390 px de large et au zoom à 200 %. Les raccourcis simulés (Ctrl+S, Ctrl+Shift+P, Ctrl+`) n’agissent que dans la zone de l’outil concerné.

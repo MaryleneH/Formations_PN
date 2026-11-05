@@ -1,0 +1,22 @@
+# Sortie de rendu Quarto
+/_site/
+/.quarto/
+/_freeze/
+*.html.md
+**/*.quarto_ipynb
+
+# Dépendances et rapports de test
+node_modules/
+/tests/e2e/screens/
+/tests/e2e/report/
+
+# Fichiers locaux et d'IDE
+*~
+.DS_Store
+Thumbs.db
+.Rhistory
+.RData
+.Rproj.user/
+.vscode/
+.idea/
+.env

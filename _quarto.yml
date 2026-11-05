@@ -1,0 +1,64 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - "*.qmd"
+  # Ressources statiques copiées telles quelles dans _site/ (chemins relatifs :
+  # le site fonctionne à la racine d'un domaine comme dans un sous-répertoire).
+  resources:
+    - assets/sim/
+    - assets/fonts/
+    - assets/img/
+
+lang: fr
+
+execute:
+  enabled: false
+
+website:
+  title: "Git — Le bac à sable"
+  description: "Prendre en main GitLab, un geste après l’autre : créer un dépôt, préparer son accès, cloner, commiter, pousser. Simulation pédagogique, données fictives."
+  # À renseigner après la première publication (voir docs/PUBLICATION.md) :
+  # site-url: "https://<groupe>.gitlab.io/<projet>/"
+  favicon: assets/img/favicon.svg
+  page-navigation: false
+  bread-crumbs: false
+  back-to-top-navigation: false
+  navbar:
+    logo: assets/img/logo.svg
+    logo-alt: "Git — Le bac à sable, accueil"
+    title: "Git — Le bac à sable"
+    pinned: false
+    left:
+      - href: index.qmd
+        text: Accueil
+      - href: bac-a-sable.qmd
+        text: Bac à sable
+      - href: dans-mes-outils.qmd
+        text: Dans mes outils
+      - href: glossaire.qmd
+        text: Glossaire
+    right:
+      - href: formatrice.qmd
+        text: Formatrice
+      - href: a-propos.qmd
+        text: Sources
+  page-footer:
+    left: "Simulation pédagogique — données fictives. Aucun serveur GitLab n’est contacté."
+    right: "Construit avec [Quarto](https://quarto.org)"
+
+format:
+  html:
+    theme:
+      light: [assets/scss/theme.scss]
+    css: assets/css/fonts.css
+    toc: true
+    toc-title: "Sur cette page"
+    toc-depth: 2
+    code-copy: true
+    highlight-style: github
+    link-external-newwindow: true
+    anchor-sections: false
+    smooth-scroll: false
+    grid:
+      body-width: 820px

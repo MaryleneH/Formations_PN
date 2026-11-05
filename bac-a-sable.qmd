@@ -1,0 +1,37 @@
+---
+pagetitle: "Bac à sable — Git — Le bac à sable"
+description: "Simulateur GitLab, VS Code et RStudio : créer un dépôt, préparer son accès, cloner, commiter, pousser."
+page-layout: custom
+toc: false
+css:
+  - assets/css/fonts.css
+  - assets/sim/sim.css
+---
+
+```{=html}
+<div id="sim-app" class="sim" aria-label="Bac à sable GitLab">
+  <noscript>
+    <p style="padding:2rem;max-width:40rem">Le bac à sable a besoin de JavaScript pour fonctionner. Les pages
+    <a href="dans-mes-outils.html">Je le fais dans mes outils</a> et <a href="glossaire.html">Glossaire</a>
+    restent consultables sans JavaScript.</p>
+  </noscript>
+  <p class="sim-loading" style="padding:2rem;color:#4a5057">Chargement du bac à sable…</p>
+</div>
+<script type="module" src="assets/sim/ui/app.js"></script>
+<script>
+  // Hauteur réelle de la barre de navigation : le simulateur occupe le reste de l'écran.
+  (function () {
+    function fit() {
+      var nav = document.getElementById('quarto-header');
+      var hgt = nav && getComputedStyle(nav).display !== 'none' ? nav.getBoundingClientRect().height : 0;
+      document.documentElement.style.setProperty('--navbar-h', hgt + 'px');
+      var app = document.getElementById('sim-app');
+      if (app) app.style.setProperty('--navbar-h', hgt + 'px');
+    }
+    window.addEventListener('resize', fit);
+    new MutationObserver(fit).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    document.addEventListener('DOMContentLoaded', fit);
+    fit();
+  })();
+</script>
+```

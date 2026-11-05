@@ -1,0 +1,90 @@
+---
+pagetitle: "Git — Le bac à sable"
+description: "Prendre en main GitLab, un geste après l’autre."
+toc: false
+---
+
+::: {.gbs-hero}
+[Simulation pédagogique — données fictives]{.gbs-fiction}
+
+[Atelier individuel · GitLab, VS Code, RStudio]{.gbs-kicker}
+
+# Prendre en main GitLab, [un geste après l’autre.]{.gbs-hand}
+
+[Créer un dépôt, préparer ton accès, cloner le projet dans ton environnement, puis envoyer une première modification. Et savoir quoi vérifier lorsque cela échoue.]{.gbs-lead}
+:::
+
+::: {#gbs-resume .gbs-resume aria-live="polite"}
+:::
+
+## Trois façons de s’exercer
+
+Le même simulateur sert aux trois. Tu peux passer de l’une à l’autre à tout moment ; ta progression est conservée dans ce navigateur.
+
+```{=html}
+<ul class="gbs-cards">
+  <li class="gbs-card">
+    <span class="gbs-num" aria-hidden="true">1</span>
+    <h3>Parcours guidé</h3>
+    <p>Une consigne à la fois. Chaque geste est expliqué au moment où il devient utile.</p>
+    <a class="gbs-card-go" href="bac-a-sable.html?mission=m1&amp;mode=guide">Commencer la mission 1 →</a>
+  </li>
+  <li class="gbs-card">
+    <span class="gbs-num" aria-hidden="true">2</span>
+    <h3>Entraînement autonome</h3>
+    <p>L’objectif reste visible, les indications détaillées sont masquées. Les aides restent disponibles si tu en as besoin.</p>
+    <a class="gbs-card-go" href="bac-a-sable.html?mission=m1&amp;mode=autonome">S’entraîner →</a>
+  </li>
+  <li class="gbs-card">
+    <span class="gbs-num" aria-hidden="true">3</span>
+    <h3>Atelier de dépannage</h3>
+    <p>Neuf situations problématiques : observer, vérifier une hypothèse, identifier la cause, agir.</p>
+    <a class="gbs-card-go" href="bac-a-sable.html?mission=d1">Ouvrir l’atelier →</a>
+  </li>
+</ul>
+```
+
+## L’objectif
+
+> « Je sais créer un dépôt GitLab, préparer mon accès, cloner ce dépôt dans mon environnement de travail, puis envoyer une première modification. Je sais aussi quoi vérifier lorsque cela échoue. »
+
+```{mermaid}
+%%| fig-cap: "Le trajet d’une modification. Le simulateur affiche ces quatre zones en permanence."
+flowchart LR
+  G[("GitLab<br/>dépôt distant")] -- "1 · git clone<br/>(URL + jeton)" --> F["Fichiers de travail"]
+  F -- "2 · git add" --> P["Préparation"]
+  P -- "3 · git commit" --> L[("Historique local")]
+  L -- "4 · git push<br/>(jeton)" --> G
+```
+
+Le **dépôt local** se trouve là où Git travaille : ton ordinateur, ou un espace distant de développement comme Coder ou Onyxia.
+
+## Les missions
+
+```{=html}
+<ol class="gbs-missions" id="gbs-missions">
+  <li data-m="m1"><span class="gbs-m-num">1</span><a href="bac-a-sable.html?mission=m1">Créer mon dépôt distant</a><span class="gbs-m-status">À faire</span></li>
+  <li data-m="m2"><span class="gbs-m-num">2</span><a href="bac-a-sable.html?mission=m2">Préparer mon accès : URL et jeton personnel</a><span class="gbs-m-status">À faire</span></li>
+  <li data-m="m3"><span class="gbs-m-num">3</span><a href="bac-a-sable.html?mission=m3">Cloner dans mon environnement (VS Code ou RStudio)</a><span class="gbs-m-status">À faire</span></li>
+  <li data-m="m4"><span class="gbs-m-num">4</span><a href="bac-a-sable.html?mission=m4">Enregistrer une modification (commit)</a><span class="gbs-m-status">À faire</span></li>
+  <li data-m="m5"><span class="gbs-m-num">5</span><a href="bac-a-sable.html?mission=m5">Envoyer et vérifier (push)</a><span class="gbs-m-status">À faire</span></li>
+  <li data-m="m6"><span class="gbs-m-num">6</span><a href="bac-a-sable.html?mission=d1">Comprendre une erreur — 9 exercices</a><span class="gbs-m-status">À faire</span></li>
+  <li data-m="m7"><span class="gbs-m-num">7</span><a href="bac-a-sable.html?mission=m7">Refaire seul, sur un nouveau projet</a><span class="gbs-m-status">À faire</span></li>
+</ol>
+```
+
+Le simulateur propose **VS Code par défaut**, et un parcours complet dans **RStudio**. Le choix se fait en haut du bac à sable ; tu peux consulter à tout moment le même geste dans l’autre interface.
+
+::: {.callout-note appearance="simple"}
+## Avant de commencer
+
+- Rien de ce que tu fais ici ne touche un vrai serveur ni ta machine : le terminal est simulé.
+- Les jetons générés portent le préfixe `DEMO-TOKEN-`. Ne saisis **jamais** un vrai jeton dans ce site : les champs le refusent et l’effacent.
+- La progression est enregistrée dans ce navigateur, sur cet appareil. Un autre navigateur repart de zéro.
+:::
+
+Après l’entraînement : la fiche [Je le fais dans mes outils](dans-mes-outils.qmd) t’accompagne dans tes véritables outils.
+
+```{=html}
+<script src="assets/sim/home.js"></script>
+```
