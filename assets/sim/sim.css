@@ -1045,3 +1045,14 @@ body:has(#sim-app) .nav-footer, body:has(#sim-app) footer.footer { display: none
 .sim-top-name { min-width: 0; }
 .sim-track { flex: none; font-weight: 600; }
 @media (max-width: 600px) { .sim-top-title { flex-wrap: wrap; row-gap: 2px; } .sim-top-name { flex-basis: 100%; } }
+
+/* Retour à l'accueil, toujours visible (y compris en mode concentration) */
+.sim-home-btn { text-decoration: none; }
+.sim-home-btn .ico { width: 16px; height: 16px; }
+.sim-home-btn + .sim-missions-btn { margin-left: -6px; }
+@media (max-width: 900px) { .sim-home-btn { order: 0; } }
+@media (max-width: 1500px) and (min-width: 901px) {
+  .sim-home-btn { padding: 6px 8px; }
+  .sim-home-btn .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (max-width: 1500px) { .sim-top-label { display: none; } }

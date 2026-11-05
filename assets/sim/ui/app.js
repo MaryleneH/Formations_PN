@@ -309,6 +309,7 @@ export class App {
           on: { click: () => this.setPref('mode', k), keydown: (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); this.setPref('mode', k === 'guide' ? 'autonome' : 'guide'); } } },
         }, MODES[k].short)));
     return h('header', { class: 'sim-top' },
+      h('a', { class: 'sim-btn sim-btn-ghost sim-home-btn', href: 'index.html', target: 'top.home', fk: 'top.home', title: 'Revenir à la page d’accueil (ta progression est conservée)' }, icon('home'), h('span', { class: 'lbl' }, 'Accueil')),
       btn('Missions', { icon: 'list', cls: 'sim-btn sim-btn-ghost sim-missions-btn', target: 'top.missions', attrs: { 'aria-expanded': String(!!this.ui.drawer), 'aria-controls': 'sim-drawer' }, on: () => { this.ui.drawer = true; this.render(); const f = this.root.querySelector('.sim-drawer [aria-current="true"]') || this.root.querySelector('.sim-drawer button'); if (f) f.focus(); } }),
       h('div', { class: 'sim-top-title' },
         h('span', { class: 'sim-top-num' }, m.group === 'm6' ? `Exercice ${m.num}` : `Mission ${m.num}`),
