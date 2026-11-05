@@ -38,7 +38,7 @@ quarto render && sh tests/check-site.sh _site
 node tests/e2e/run.mjs [--shots]     # parcours dans Chromium (Playwright requis)
 ```
 
-Les tests de parcours servent `_site/` sous `/projet/` (comme GitLab Pages), jouent les missions 1 à 5 depuis un état vierge dans **VS Code** puis dans **RStudio**, un exercice de dépannage, la reprise et la réinitialisation, la saisie d’un faux secret, la création au clavier, et vérifient l’absence de défilement horizontal à 1368, 1440, 1024, 768 et 390 px. `--shots` enregistre des captures dans `tests/e2e/screens/` (ignoré par Git).
+Les tests de parcours servent `_site/` sous `/projet/` (comme GitHub Pages, qui publie sous `/Formations_PN/`), jouent les missions 1 à 5 depuis un état vierge dans **VS Code** puis dans **RStudio**, un exercice de dépannage, la reprise et la réinitialisation, la saisie d’un faux secret, la création au clavier, et vérifient l’absence de défilement horizontal à 1368, 1440, 1024, 768 et 390 px. `--shots` enregistre des captures dans `tests/e2e/screens/` (ignoré par Git).
 
 ## Architecture
 
@@ -55,9 +55,9 @@ Les tests de parcours servent `_site/` sous `/projet/` (comme GitLab Pages), jou
 
 Détails, ajout d’une mission et liste des cibles de « Montrer le geste » : [`docs/MAINTENANCE.md`](docs/MAINTENANCE.md).
 
-## Publier sur GitLab Pages
+## Publier sur GitHub Pages
 
-Les sources sont développées et relues sur **GitHub** ; un projet **GitLab** reçoit les sources et sa pipeline (`.gitlab-ci.yml`) construit puis publie le site. Mise en place, synchronisation par un second remote et paramètres à renseigner : [`docs/PUBLICATION.md`](docs/PUBLICATION.md).
+Le workflow `.github/workflows/publish.yml` teste le moteur, rend le site, le contrôle puis le déploie par GitHub Actions à chaque push sur `main` (ou à la demande : onglet *Actions* › *Run workflow*). Il n'y a pas de branche `gh-pages`. Adresse du site : <https://maryleneh.github.io/Formations_PN/>. Détails : [`docs/PUBLICATION.md`](docs/PUBLICATION.md).
 
 ## Références et versions
 

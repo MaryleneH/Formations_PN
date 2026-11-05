@@ -1,7 +1,7 @@
 // =====================================================================
 // Tests de parcours dans un vrai navigateur (Playwright + Chromium).
 // Le site rendu (_site/) est servi SOUS UN SOUS-RÉPERTOIRE (/projet/)
-// pour vérifier qu'il fonctionne comme sur GitLab Pages.
+// pour vérifier qu’il fonctionne comme sur GitHub Pages.
 //
 //   quarto render && node tests/e2e/run.mjs [--shots]
 // =====================================================================

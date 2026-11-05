@@ -18,8 +18,7 @@ execute:
 website:
   title: "Git — Le bac à sable"
   description: "Prendre en main GitLab, un geste après l’autre : créer un dépôt, préparer son accès, cloner, commiter, pousser. Simulation pédagogique, données fictives."
-  # À renseigner après la première publication (voir docs/PUBLICATION.md) :
-  # site-url: "https://<groupe>.gitlab.io/<projet>/"
+  site-url: "https://maryleneh.github.io/Formations_PN/"
   favicon: assets/img/favicon.svg
   page-navigation: false
   bread-crumbs: false

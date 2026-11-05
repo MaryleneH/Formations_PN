@@ -1,0 +1,65 @@
+name: Publier le site sur GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Déploiement par GitHub Actions : pas de branche gh-pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  rendre:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tests du moteur, du terminal et des scénarios
+        run: node --test tests/*.test.js
+
+      # Rien n'est exécuté au rendu (execute: enabled: false) : ni R ni Python à installer.
+      - name: Installer Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.10.20
+
+      # Active GitHub Pages (source « GitHub Actions ») si ce n'est pas déjà fait.
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Rendre le site
+        run: quarto render
+
+      - name: Contrôler le site rendu
+        run: sh tests/check-site.sh _site
+
+      - name: Téléverser le site rendu
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deployer:
+    needs: rendre
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - name: Déployer sur GitHub Pages
+        id: deploiement
+        uses: actions/deploy-pages@v4

@@ -1,8 +1,8 @@
 #!/bin/sh
-# Contrôles du site rendu (_site/), exécutables sans Node : utilisés par la CI GitLab.
+# Contrôles du site rendu (_site/), exécutables sans Node : utilisés par la CI.
 #  - les pages et les ressources du simulateur sont présentes ;
 #  - aucun chemin absolu depuis la racine du domaine (le site doit fonctionner
-#    dans un sous-répertoire de GitLab Pages) ;
+#    dans un sous-répertoire, comme sur GitHub Pages) ;
 #  - aucune ressource chargée depuis un domaine externe par le simulateur.
 set -eu
 SITE="${1:-_site}"

@@ -39,7 +39,7 @@ La documentation de Posit n’était pas accessible depuis l’environnement de 
 - [Dépôts et remotes dans VS Code](https://code.visualstudio.com/docs/sourcecontrol/repos-remotes) · [Staging et commits dans VS Code](https://code.visualstudio.com/docs/sourcecontrol/staging-commits)
 - [Gestion de versions dans RStudio](https://docs.posit.co/ide/user/ide/guide/tools/version-control.html)
 - [gitcredentials](https://git-scm.com/docs/gitcredentials)
-- [GitLab Pages](https://docs.gitlab.com/user/project/pages/) · [Mot-clé `pages`](https://docs.gitlab.com/ci/yaml/#pages) · [Interactivité dans Quarto](https://quarto.org/docs/interactive/) · [Diagrammes dans Quarto](https://quarto.org/docs/authoring/diagrams.html) · [Extensions Quarto](https://quarto.org/docs/extensions/)
+- [Publier avec GitHub Pages (Quarto)](https://quarto.org/docs/publishing/github-pages.html) · [Interactivité dans Quarto](https://quarto.org/docs/interactive/) · [Diagrammes dans Quarto](https://quarto.org/docs/authoring/diagrams.html) · [Extensions Quarto](https://quarto.org/docs/extensions/)
 
 ## Choix techniques
 
