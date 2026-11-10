@@ -526,7 +526,18 @@ const filmState = (p) => p.evaluate(() => {
     current: [...document.querySelectorAll('#film .gbs-chapter')].findIndex((a) => a.getAttribute('aria-current') === 'time'),
   };
 });
-const filmAt = (p, t) => p.waitForFunction((x) => { const v = document.querySelector('#film video'); return v.currentTime >= x && !v.paused; }, t, { timeout: 15000 });
+// Attend que le film soit lancé au-delà de t secondes ; en cas d’échec, décrit l’état du lecteur.
+async function filmAt(p, t) {
+  try {
+    await p.waitForFunction((x) => { const v = document.querySelector('#film video'); return v.currentTime >= x && !v.paused; }, t, { timeout: 15000 });
+  } catch (e) {
+    const st = await p.evaluate(() => {
+      const v = document.querySelector('#film video');
+      return { t: v.currentTime, paused: v.paused, readyState: v.readyState, networkState: v.networkState, erreur: v.error && v.error.code, panneau: !document.querySelector('.gbs-player-error').hidden };
+    }).catch(() => ({}));
+    throw new Error(`film attendu en lecture au-delà de ${t} s : ${JSON.stringify(st)}`);
+  }
+}
 
 await check('accueil : le film se lit, se parcourt par chapitres et se reprend', async () => {
   const ctx = await browser.newContext({ viewport: { width: 1368, height: 820 } });
@@ -573,6 +584,37 @@ await check('accueil : le film se lit, se parcourt par chapitres et se reprend',
   await filmAt(p, 299.5);
   await p.waitForFunction(() => Math.abs(document.getElementById('film').getBoundingClientRect().top) < 80, null, { timeout: 5000 });
   assert(!errors.length, 'erreurs JS : ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await check('accueil : après une erreur passagère, « Réessayer » relance le film au même endroit', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1368, height: 820 } });
+  const p = await ctx.newPage();
+  await p.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  const h264 = await p.evaluate(() => document.createElement('video').canPlayType('video/mp4; codecs="avc1.640028, mp4a.40.2"'));
+  if (!h264) { results.push('     (navigateur sans H.264 : reprise après erreur non vérifiée)'); return ctx.close(); }
+  await p.locator('#film .gbs-chapter').nth(2).click();
+  await filmAt(p, 151);
+  // Erreur réseau simulée : le panneau propose de réessayer et de télécharger.
+  await p.evaluate(() => document.querySelector('#film video').dispatchEvent(new Event('error')));
+  await p.locator('.gbs-player-error').waitFor({ state: 'visible' });
+  assert(await p.locator('[data-film-retry]').isVisible(), 'bouton « Réessayer » absent');
+  await p.locator('[data-film-retry]').click();
+  await filmAt(p, 150);
+  assert(await p.locator('.gbs-player-error').isHidden(), 'le panneau d’erreur doit disparaître');
+  await ctx.close();
+});
+
+await check('accueil : format refusé par le navigateur, téléchargement proposé sans « Réessayer »', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1368, height: 820 } });
+  const p = await ctx.newPage();
+  await p.addInitScript(() => { HTMLMediaElement.prototype.canPlayType = () => ''; });
+  await p.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  assert(await p.locator('.gbs-player-error').isVisible(), 'message de repli absent');
+  assert(await p.locator('[data-film-retry]').isHidden(), '« Réessayer » ne doit pas être proposé');
+  assert(await p.locator('.gbs-player-cover').isHidden(), 'la couverture doit être masquée');
+  await p.locator('[data-film-play]').click();
+  await p.waitForFunction(() => location.hash === '#film');
   await ctx.close();
 });
 
