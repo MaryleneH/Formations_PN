@@ -11,6 +11,7 @@
   var source = video && video.querySelector('source');
   var cover = film.querySelector('.gbs-player-cover');
   var errorBox = film.querySelector('.gbs-player-error');
+  var retryBtn = film.querySelector('[data-film-retry]');
   var links = Array.prototype.slice.call(film.querySelectorAll('.gbs-chapter'));
   if (!player || !video || !cover || !links.length) return;
 
@@ -20,8 +21,9 @@
   var starts = links.map(function (a) { return Number(a.getAttribute('data-t')) || 0; });
   var bars = links.map(function (a) { return a.querySelector('.gbs-chapter-bar > span'); });
   var current = -1;
-  var pendingT = null;
-  var failed = false;
+  var wanted = null;
+  var broken = false; // la lecture a échoué : un geste de lecture relance le chargement
+  var fatal = false;  // ce navigateur refuse le format : seul le téléchargement reste possible
   var lastSave = 0;
 
   // ---- utilitaires ----
@@ -95,20 +97,34 @@
   }
 
   // ---- lecture ----
+  // Avant le chargement des métadonnées, le navigateur retient la position demandée et
+  // s'y place dès qu'il le peut. On ne la réapplique que s'il l'a ignorée : une position
+  // choisie entre-temps (autre chapitre, barre de lecture) n'est jamais écrasée.
   function seek(t) {
-    if (video.readyState >= 1) { try { video.currentTime = t; } catch (e) { /* ignoré */ } return; }
-    pendingT = t;
-    try { video.currentTime = t; } catch (e) { /* position appliquée au chargement */ }
+    wanted = video.readyState >= 1 ? null : t;
+    try { video.currentTime = t; } catch (e) { /* appliquée au chargement */ }
   }
   video.addEventListener('loadedmetadata', function () {
-    if (pendingT !== null && Math.abs(video.currentTime - pendingT) > 0.5) {
-      try { video.currentTime = pendingT; } catch (e) { /* ignoré */ }
+    if (wanted !== null && wanted > 0 && video.currentTime < 0.5) {
+      try { video.currentTime = wanted; } catch (e) { /* ignoré */ }
     }
-    pendingT = null;
+    wanted = null;
   });
 
+  // Après une erreur passagère (réseau, décodage), on recharge la vidéo à la position atteinte.
+  function recover(t) {
+    var at = typeof t === 'number' ? t : video.currentTime;
+    broken = false;
+    player.classList.remove('is-error');
+    film.classList.remove('is-film-error');
+    if (errorBox) errorBox.hidden = true;
+    video.load();
+    return at;
+  }
+
   function start(t, focus) {
-    if (failed) return;
+    if (fatal) return;
+    if (broken) t = recover(t);
     cover.hidden = true;
     player.classList.add('is-started');
     if (typeof t === 'number') { seek(t); paint(t); }
@@ -125,26 +141,29 @@
     return r.top >= 0 && r.bottom <= (window.innerHeight || document.documentElement.clientHeight);
   }
 
-  function fail() {
-    if (failed) return;
-    failed = true;
+  function fail(definitive) {
+    if (definitive) fatal = true;
+    broken = true;
     cover.hidden = true;
+    film.classList.remove('is-playing');
     player.classList.add('is-error');
     film.classList.add('is-film-error');
+    if (retryBtn) retryBtn.hidden = fatal;
     if (errorBox) errorBox.hidden = false;
   }
 
   // ---- branchements ----
-  if (video.canPlayType && video.canPlayType('video/mp4') === '') { fail(); return; }
+  if (video.canPlayType && video.canPlayType('video/mp4') === '') { fail(true); return; }
   player.classList.add('is-enhanced');
   cover.hidden = false;
   cover_state();
 
   cover.addEventListener('click', function () { start(from(), true); });
+  if (retryBtn) retryBtn.addEventListener('click', function () { start(null, true); });
 
   film.querySelector('.gbs-chapters-list').addEventListener('click', function (ev) {
     var a = ev.target.closest && ev.target.closest('.gbs-chapter');
-    if (!a || failed || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button > 0) return;
+    if (!a || fatal || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button > 0) return;
     ev.preventDefault();
     var k = links.indexOf(a);
     start(starts[k], false);
@@ -153,7 +172,7 @@
 
   Array.prototype.forEach.call(document.querySelectorAll('[data-film-play]'), function (btn) {
     btn.addEventListener('click', function (ev) {
-      if (failed) return;
+      if (fatal) return;
       ev.preventDefault();
       film.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
       start(from(), true);
@@ -161,6 +180,7 @@
   });
 
   video.addEventListener('timeupdate', function () {
+    if (video.readyState < 1) return; // rechargement en cours : position pas encore connue
     paint(video.currentTime);
     var now = Date.now();
     if (now - lastSave > 3000 && !video.seeking) { lastSave = now; ecrire(video.currentTime, false); }
@@ -168,12 +188,13 @@
   video.addEventListener('play', function () { player.classList.add('is-started'); cover.hidden = true; film.classList.add('is-playing'); });
   video.addEventListener('pause', function () {
     film.classList.remove('is-playing');
-    if (!video.ended && video.currentTime > 0) ecrire(video.currentTime, false);
+    if (!video.ended && video.readyState >= 1 && video.currentTime > 0) ecrire(video.currentTime, false);
   });
   video.addEventListener('ended', function () { film.classList.remove('is-playing'); ecrire(0, true); });
-  video.addEventListener('error', fail);
-  if (source) source.addEventListener('error', fail);
+  // Code 4 : format refusé par le navigateur. Les autres erreurs peuvent être passagères.
+  video.addEventListener('error', function () { fail(!!video.error && video.error.code === 4); });
+  if (source) source.addEventListener('error', function () { fail(false); });
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'hidden' && player.classList.contains('is-started') && !video.ended) ecrire(video.currentTime, false);
+    if (document.visibilityState === 'hidden' && player.classList.contains('is-started') && !video.ended && video.readyState >= 1) ecrire(video.currentTime, false);
   });
 })();
