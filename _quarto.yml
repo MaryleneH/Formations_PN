@@ -9,6 +9,7 @@ project:
     - assets/sim/
     - assets/fonts/
     - assets/img/
+    - assets/film/
 
 lang: fr
 

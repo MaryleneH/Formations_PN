@@ -19,7 +19,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../_
 const PREFIX = '/projet';
 const SHOTS = process.argv.includes('--shots');
 const SHOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'screens');
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.json': 'application/json', '.png': 'image/png', '.woff2': 'font/woff2' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.ttf': 'font/ttf', '.json': 'application/json', '.png': 'image/png', '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.webp': 'image/webp', '.jpg': 'image/jpeg' };
 
 function serve() {
   const srv = http.createServer((req, res) => {
@@ -28,7 +28,19 @@ function serve() {
     let f = path.join(ROOT, u.slice(PREFIX.length));
     if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, 'index.html');
     if (!f.startsWith(ROOT) || !fs.existsSync(f)) { res.writeHead(404); return res.end('not found'); }
-    res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' });
+    const type = TYPES[path.extname(f)] || 'application/octet-stream';
+    const size = fs.statSync(f).size;
+    // Requêtes partielles (Range), comme GitHub Pages : nécessaires pour se déplacer dans la vidéo.
+    const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+    if (m && (m[1] || m[2])) {
+      let start = m[1] ? Number(m[1]) : size - Number(m[2]);
+      let end = m[1] && m[2] ? Math.min(Number(m[2]), size - 1) : size - 1;
+      if (start < 0) start = 0;
+      if (start > end) { res.writeHead(416, { 'content-range': `bytes */${size}` }); return res.end(); }
+      res.writeHead(206, { 'content-type': type, 'accept-ranges': 'bytes', 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': end - start + 1 });
+      return fs.createReadStream(f, { start, end }).pipe(res);
+    }
+    res.writeHead(200, { 'content-type': type, 'accept-ranges': 'bytes', 'content-length': size });
     fs.createReadStream(f).pipe(res);
   });
   return new Promise((ok) => srv.listen(0, () => ok(srv)));
@@ -503,6 +515,91 @@ await check('clavier : créer le projet GitLab sans souris', async () => {
   assert(w.remote.projects['stagiaire/etude-entreprises'], 'projet créé au clavier');
   await p.context().close();
 });
+
+// ---- Accueil : le film ----
+const filmState = (p) => p.evaluate(() => {
+  const v = document.querySelector('#film video');
+  return {
+    t: v.currentTime, paused: v.paused,
+    cover: !document.querySelector('.gbs-player-cover').hidden,
+    error: !document.querySelector('.gbs-player-error').hidden,
+    current: [...document.querySelectorAll('#film .gbs-chapter')].findIndex((a) => a.getAttribute('aria-current') === 'time'),
+  };
+});
+const filmAt = (p, t) => p.waitForFunction((x) => { const v = document.querySelector('#film video'); return v.currentTime >= x && !v.paused; }, t, { timeout: 15000 });
+
+await check('accueil : le film se lit, se parcourt par chapitres et se reprend', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1368, height: 820 } });
+  const p = await ctx.newPage();
+  const errors = [];
+  p.on('pageerror', (e) => errors.push(e.message));
+  p.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await p.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  await p.evaluate(() => localStorage.clear());
+  await p.reload({ waitUntil: 'networkidle' });
+  let s = await filmState(p);
+  assert(s.cover && !s.error, 'couverture du film absente');
+  assert(await p.locator('#film .gbs-chapter').count() === 6, 'six chapitres attendus');
+  assert((await p.locator('.gbs-player-cover').getAttribute('aria-label')).startsWith('Lire le film'), 'nom accessible de la couverture');
+  const h264 = await p.evaluate(() => document.createElement('video').canPlayType('video/mp4; codecs="avc1.640028, mp4a.40.2"'));
+  if (!h264) {
+    // Navigateur sans H.264 : le lecteur doit proposer le téléchargement, sans erreur JS.
+    await p.locator('#film .gbs-chapter').nth(3).click();
+    await p.locator('.gbs-player-error').waitFor({ state: 'visible', timeout: 15000 });
+    assert(!errors.length, 'erreurs JS : ' + errors.join(' | '));
+    results.push('     (navigateur sans H.264 : seul le message de repli a été vérifié)');
+    return ctx.close();
+  }
+  // Un chapitre : la lecture part de son début, le chapitre est signalé comme en cours.
+  await p.locator('#film .gbs-chapter').nth(3).click();
+  await filmAt(p, 248.5);
+  s = await filmState(p);
+  assert(!s.cover && s.current === 3, `chapitre en cours : ${s.current}`);
+  await shot(p, 'accueil-film-lecture');
+  // La position est conservée, puis proposée à la reprise.
+  await p.evaluate(() => document.querySelector('#film video').pause());
+  const saved = await p.evaluate(() => JSON.parse(localStorage.getItem('git-bac-a-sable/film')));
+  assert(saved && saved.t >= 248 && saved.fin === false, 'position non conservée : ' + JSON.stringify(saved));
+  await p.reload({ waitUntil: 'networkidle' });
+  assert((await p.locator('.gbs-player-action').innerText()) === 'Reprendre', 'reprise non proposée');
+  assert((await filmState(p)).current === 3, 'chapitre de reprise non signalé');
+  await shot(p, 'accueil-film-reprise');
+  await p.locator('.gbs-player-cover').click();
+  await filmAt(p, 248);
+  assert(await p.evaluate(() => document.activeElement === document.querySelector('#film video')), 'le focus doit passer au lecteur');
+  // Après une pause plus loin, le bouton du bandeau reprend là où l’on s’est arrêté.
+  await p.evaluate(() => { const v = document.querySelector('#film video'); v.currentTime = 300; v.pause(); window.scrollTo(0, 0); });
+  await p.locator('[data-film-play]').click();
+  await filmAt(p, 299.5);
+  await p.waitForFunction(() => Math.abs(document.getElementById('film').getBoundingClientRect().top) < 80, null, { timeout: 5000 });
+  assert(!errors.length, 'erreurs JS : ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await check('accueil sans JavaScript : lecteur natif et liens de chapitres', async () => {
+  const ctx = await browser.newContext({ javaScriptEnabled: false });
+  const p = await ctx.newPage();
+  await p.goto(`${base}/index.html`);
+  assert(await p.locator('#film video[controls]').isVisible(), 'lecteur natif visible');
+  assert(!(await p.locator('.gbs-player-cover').isVisible()), 'couverture masquée sans script');
+  const href = await p.locator('#film .gbs-chapter').nth(2).getAttribute('href');
+  assert(href === 'assets/film/synchroniser-onyxia-gitlab.mp4#t=151.2', 'lien de chapitre : ' + href);
+  await ctx.close();
+});
+
+for (const [w, h] of [[1368, 768], [1440, 900], [1024, 768], [768, 1024], [390, 844]]) {
+  await check(`accueil ${w}×${h} : film en 16:9, pas de défilement horizontal`, async () => {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+    const p = await ctx.newPage();
+    await p.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+    const over = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert(over <= 1, `débordement horizontal de ${over}px`);
+    const box = await p.locator('#film .gbs-player-frame').boundingBox();
+    assert(box && Math.abs(box.width / box.height - 16 / 9) < 0.02, 'cadre du lecteur hors 16:9');
+    if (SHOTS) { await shot(p, `accueil-${w}`); await p.locator('#film').evaluate((e) => e.scrollIntoView()); await shot(p, `accueil-${w}-film`); }
+    await ctx.close();
+  });
+}
 
 for (const [w, h] of [[1368, 768], [1440, 900], [1024, 768], [768, 1024], [390, 844]]) {
   await check(`mise en page ${w}×${h} : pas de défilement horizontal`, async () => {

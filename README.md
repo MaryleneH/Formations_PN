@@ -10,7 +10,7 @@ Site Quarto proposant un **bac à sable interactif** pour apprendre à connecter
 
 | Page | Rôle |
 |---|---|
-| `index.qmd` | Accueil : les trois modalités, la reprise de session, les missions |
+| `index.qmd` | Accueil : le film d’introduction, les deux situations, les trois modalités, la reprise de session, les missions |
 | `bac-a-sable.qmd` | Le simulateur (GitLab, VS Code, RStudio) |
 | `dans-mes-outils.qmd` | Fiche de transfert vers les vrais outils (imprimable) |
 | `glossaire.qmd` | Les notions du parcours |
@@ -38,7 +38,7 @@ quarto render && sh tests/check-site.sh _site
 node tests/e2e/run.mjs [--shots]     # parcours dans Chromium (Playwright requis)
 ```
 
-Les tests de parcours servent `_site/` sous `/projet/` (comme GitHub Pages, qui publie sous `/Formations_PN/`), jouent les missions 1 à 5 depuis un état vierge dans **VS Code** puis dans **RStudio**, un exercice de dépannage, la reprise et la réinitialisation, la saisie d’un faux secret, la création au clavier, et vérifient l’absence de défilement horizontal à 1368, 1440, 1024, 768 et 390 px. `--shots` enregistre des captures dans `tests/e2e/screens/` (ignoré par Git).
+Les tests de parcours servent `_site/` sous `/projet/` (comme GitHub Pages, qui publie sous `/Formations_PN/`), jouent les missions 1 à 5 depuis un état vierge dans **VS Code** puis dans **RStudio**, un exercice de dépannage, la reprise et la réinitialisation, la saisie d’un faux secret, la création au clavier, le film de l’accueil (chapitres, reprise, version sans JavaScript), et vérifient l’absence de défilement horizontal à 1368, 1440, 1024, 768 et 390 px. `--shots` enregistre des captures dans `tests/e2e/screens/` (ignoré par Git).
 
 ## Architecture
 
@@ -49,11 +49,12 @@ Les tests de parcours servent `_site/` sous `/projet/` (comme GitHub Pages, qui 
 | Progression | `assets/sim/core/progress.js` | Validation des étapes d’après l’état, reprise, réinitialisation |
 | Scénarios | `assets/sim/scenarios/` | Missions, exercices de dépannage, glossaire court |
 | Vues | `assets/sim/ui/` | GitLab, VS Code, RStudio, terminal, coach, barre d’outils |
+| Film | `assets/film/` | Film de l’accueil, affiche, vignettes des chapitres, lecteur (`film.js`) |
 | Styles | `assets/scss/theme.scss`, `assets/sim/sim.css` | Système graphique du site et du simulateur |
 | Tests | `tests/` | Moteur, scénarios, site rendu, parcours navigateur |
 | Documentation | `docs/` | Maintenance, publication |
 
-Détails, ajout d’une mission et liste des cibles de « Montrer le geste » : [`docs/MAINTENANCE.md`](docs/MAINTENANCE.md).
+Détails, ajout d’une mission, liste des cibles de « Montrer le geste » et remplacement du film : [`docs/MAINTENANCE.md`](docs/MAINTENANCE.md).
 
 ## Publier sur GitHub Pages
 

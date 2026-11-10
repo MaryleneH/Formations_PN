@@ -48,12 +48,13 @@ La documentation de Posit n’était pas accessible depuis l’environnement de 
 - **Mermaid** (intégré à Quarto) pour le schéma du trajet d’une modification.
 - **Aucune extension Quarto** : `mcanouil/quarto-gitlink` (v1.12.0, licence MIT, Quarto ≥ 1.9.38) existe et est maintenue, mais elle transforme des références de forge (issues, commits) en liens et peut afficher des compteurs récupérés en ligne. Ce site ne cite pas de références de forge et ne doit dépendre d’aucun appel réseau : elle n’apporte rien ici. Aucune extension ne fournit un moteur de simulation Git ; le moteur est écrit pour ce projet.
 - **Icônes** dessinées pour le projet, intégrées au code. **Polices** locales sous licence SIL OFL : Public Sans, Fraunces, JetBrains Mono.
+- **Film de l’accueil** réalisé avec NotebookLM, publié avec le site (MP4 H.264, 38 Mo) et lu par le lecteur intégré au navigateur : aucun service vidéo tiers.
 
 ## Données fictives et confidentialité
 
 - Toutes les adresses (`gitlab.example.com`), personnes, projets et données sont **fictifs**.
 - Les jetons générés portent le préfixe `DEMO-TOKEN-`. Les champs de jeton n’acceptent que ces valeurs ; toute autre saisie est effacée sans être conservée ni affichée.
-- La progression est enregistrée dans le **stockage local du navigateur** (clé `git-bac-a-sable/v1`). Elle ne quitte pas l’appareil. Si ce stockage est indisponible, la session continue en mémoire.
+- La progression est enregistrée dans le **stockage local du navigateur** (clé `git-bac-a-sable/v1`). Elle ne quitte pas l’appareil. Si ce stockage est indisponible, la session continue en mémoire. Le film de l’accueil n’y garde que sa position de lecture (clé `git-bac-a-sable/film`).
 - Le terminal n’exécute **aucune** commande sur la machine : il interprète un sous-ensemble documenté.
 
 ## Commandes reconnues par le terminal simulé
@@ -65,3 +66,5 @@ Toute autre commande reçoit une explication sur la limite du simulateur.
 ## Accessibilité
 
 Navigation complète au clavier, focus visibles, libellés explicites, messages d’erreur associés aux champs, respect de `prefers-reduced-motion`, cibles d’au moins 32 px (44 px sur écran tactile), composition adaptée jusqu’à 390 px de large et au zoom à 200 %. Les raccourcis simulés (Ctrl+S, Ctrl+Shift+P, Ctrl+`) n’agissent que dans la zone de l’outil concerné.
+
+Le film de l’accueil n’a pas encore de sous-titres : une version texte, placée sous le lecteur, en reprend les points clés. Ses chapitres se parcourent au clavier et fonctionnent aussi sans JavaScript (ils ouvrent la vidéo au bon moment).

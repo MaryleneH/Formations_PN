@@ -9,7 +9,9 @@ SITE="${1:-_site}"
 fail=0
 for f in index.html bac-a-sable.html dans-mes-outils.html glossaire.html formatrice.html a-propos.html \
          assets/sim/ui/app.js assets/sim/engine/engine.js assets/sim/scenarios/index.js assets/sim/sim.css \
-         assets/fonts/PublicSans-Regular.ttf assets/img/logo.svg; do
+         assets/fonts/PublicSans-Regular.ttf assets/img/logo.svg \
+         assets/film/film.js assets/film/affiche.jpg assets/film/synchroniser-onyxia-gitlab.mp4 \
+         assets/film/chapitre-0.webp assets/film/chapitre-5.webp; do
   if [ ! -s "$SITE/$f" ]; then echo "manquant : $f"; fail=1; fi
 done
 # Chemins absolus « /... » dans les attributs href/src et les url() CSS.
