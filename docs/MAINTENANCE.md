@@ -64,3 +64,44 @@ Le test `tests/scenarios.test.js` vérifie que chaque cible citée dans un scén
 ## Mettre à jour une interface simulée
 
 Quand GitLab, VS Code ou RStudio changent un libellé : modifier la vue concernée (`assets/sim/ui/*.js`), les textes des scénarios, la fiche `dans-mes-outils.qmd` et le tableau des versions de `a-propos.qmd`.
+
+## Remplacer le film de l’accueil
+
+Le film est publié avec le site, dans `assets/film/` :
+
+| Fichier | Contenu |
+|---|---|
+| `synchroniser-onyxia-gitlab.mp4` | La vidéo : H.264 et AAC, index en tête de fichier pour démarrer sans tout télécharger |
+| `affiche.jpg` | L’image affichée avant la lecture (1280 × 720) |
+| `chapitre-0.webp` … `chapitre-5.webp` | Les vignettes des chapitres (320 × 180) |
+| `film.js` | Le lecteur : couverture, chapitres, reprise de la lecture |
+
+Pour une nouvelle version du film, conserver le nom du fichier, puis :
+
+```bash
+# Index en tête de fichier, sans réencoder
+ffmpeg -i source.mp4 -c copy -movflags +faststart assets/film/synchroniser-onyxia-gitlab.mp4
+# Durée, en secondes
+ffprobe -v error -show_entries format=duration -of csv=p=0 assets/film/synchroniser-onyxia-gitlab.mp4
+# Changements de plan, pour repérer le début des chapitres
+ffmpeg -i assets/film/synchroniser-onyxia-gitlab.mp4 -vf "select='gt(scene,0.25)',showinfo" -f null - 2>&1 | grep -o 'pts_time:[0-9.]*'
+# Affiche (image prise à 2 s) et vignette d’un chapitre (image prise à 47 s)
+ffmpeg -ss 2 -i assets/film/synchroniser-onyxia-gitlab.mp4 -frames:v 1 -q:v 3 assets/film/affiche.jpg
+ffmpeg -ss 47 -i assets/film/synchroniser-onyxia-gitlab.mp4 -frames:v 1 -vf scale=320:180 -c:v libwebp -quality 80 assets/film/chapitre-1.webp
+```
+
+Dans `index.qmd`, mettre ensuite à jour :
+
+- pour chaque chapitre, le début en secondes à trois endroits (`data-t`, la fin du lien `#t=` et l’élément `<time>`) ;
+- la durée : `data-duree` sur le lecteur, la mention « 9 min 25 » du bandeau et la pastille « 9 min » du bouton d’accueil ;
+- la version texte (bloc *Version texte : les points clés du film*) et le poids annoncé dans les liens de téléchargement.
+
+Taille : GitHub signale les fichiers de plus de 50 Mo et refuse ceux de plus de 100 Mo. Chaque remplacement ajoute la vidéo entière à l’historique Git. Au-delà, héberger la vidéo ailleurs et changer l’adresse du `<source>` ; le site dépend alors de cet hébergement.
+
+Sous-titres : pour en ajouter, déposer un fichier WebVTT et l’annoncer dans la balise `<video>` :
+
+```html
+<track kind="captions" srclang="fr" label="Français" src="assets/film/sous-titres.vtt" default>
+```
+
+Le lecteur ne conserve que la position de lecture (clé `git-bac-a-sable/film` du stockage local : secondes écoulées, film vu en entier ou non).
