@@ -55,7 +55,7 @@ toc: false
             <span class="gbs-player-progress" aria-hidden="true" hidden><span></span></span>
           </button>
           <div class="gbs-player-error" role="alert" hidden>
-            <p><strong>Ce navigateur ne parvient pas à lire la vidéo.</strong></p>
+            <p><strong>La vidéo ne peut pas être lue ici.</strong></p>
             <p><a href="assets/film/synchroniser-onyxia-gitlab.mp4" download>Télécharger le film (MP4, 38&nbsp;Mo)</a> pour le regarder avec un autre lecteur.</p>
           </div>
         </div>
